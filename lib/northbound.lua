@@ -9,15 +9,15 @@ local Formatters = require "formatters"
 local options = {}
 options.noiseFilter = {"LP12", "LP24", "HP12", "HP24","BP6", "BP12"}
 options.noiseAmpEnvelope = {"Exp", "Lin", "Gate"}
-options.wave = {"Sine","Tri","Saw","Square","Pulse","Cymbal"}
+options.wave = {"Sine","Tri","Saw","Square","Pulse","Cymbal","Drumhead"}
 options.toneAmpEnvelope = {"Exp", "Lin"}
+options.click = {"White Noise","Pink Noise","Brown Noise","Pulse 1","Pulse 2","Pulse 3"}
 
 local specs = {}
 specs.freq = ControlSpec.new(20, 20000, "exp", 0, 100, "Hz")
 specs.attack = ControlSpec.new(0.0, 3.0, "lin", 0, 0.01, "s")
 specs.decay = ControlSpec.new(0.1, 10.0, "lin", 0, 0.5, "s")
 specs.amp = ControlSpec.new(0, 1, "lin", 0, 1, "")
-specs.bendTime = ControlSpec.new(0.00, 10.00, "lin", 0.1, 0.5, "")
 specs.filterFreq = ControlSpec.new(20, 20000, "exp", 0, 20000, "Hz")
 specs.filterResonance = ControlSpec.new(0, 20, "lin", 1, 0, "")
 specs.mix = ControlSpec.new(0, 100, "lin", 1, 50, "%")
@@ -29,21 +29,14 @@ specs.pitch = ControlSpec.new(0, 127, "lin", 1, 60, "st")
 specs.spectra = ControlSpec.new(0, 99, "lin", 1, 0, "")
 specs.dynFilter = ControlSpec.new(-50, 50, "lin", 1, 0, "")
 
-local function bipolar_to_freq(value)
-  value = util.linlin(-9,9,-3,3,value)
-  if value == 0 then
-    return 1
-  elseif value < 0 then
-    return -1/value
-  else
-    return 1*value
-  end
+local function reset_channel(ch)
+  params:set(ch..toneWaveType,1)
 end
 
 function Northbound.add_params()
   params:add_separator("NORTHBOUND")
   for i=1,8 do
-    params:add_group("CHANNEL "..i,30)
+    params:add_group("CHANNEL "..i,34)
     params:add_separator("Tone")
     params:add{type = "option", id = i.."toneWaveType", name = "Wave", options = options.wave, 1, action=function(value) engine.toneWaveType(i,value) end}
     params:add{type = "option", id = i.."toneAmpEnvelope", name = "Amp Envelope", options = options.toneAmpEnvelope, 1, action=function(value) engine.toneAmpEnvelope(i,value) end}
@@ -56,7 +49,7 @@ function Northbound.add_params()
     params:add{type = "control", id = i.."toneFilterFreq", name = "Filter Freq", controlspec = specs.filterFreq, action=function(value) engine.toneFilterFreq(i,value) end}
     params:add{type = "control", id = i.."toneDynFilter", name = "Dynamic Filter", controlspec = specs.dynFilter, action=function(value) engine.toneDynFilter(i,value) end}
     params:add{type = "control", id = i.."toneBend", name = "Bend", controlspec = specs.dynFilter, action=function(value) engine.toneBend(i,value) end}
-    params:add{type = "control", id = i.."toneBendTime", name = "Bend Time", controlspec = specs.bendTime, action=function(value) engine.toneBendTime(i,value) end}
+    params:add{type = "control", id = i.."toneBendTime", name = "Bend Time", controlspec = specs.decay, action=function(value) engine.toneBendTime(i,value) end}
     params:add_separator("Noise")
     params:add{type = "option", id = i.."noiseFilterType", name = "Filter Type", options = options.noiseFilter, 1, action=function(value) engine.noiseFilterType(i,value) end}
     params:add{type = "option", id = i.."noiseAmpEnvelope", name = "Amp Envelope", options = options.noiseAmpEnvelope, 1, action=function(value) engine.noiseAmpEnvelope(i,value) end}
@@ -66,7 +59,11 @@ function Northbound.add_params()
     params:add{type = "control", id = i.."noiseAmp", name = "Amp", controlspec = specs.amp, action=function(value) engine.noiseAmp(i,value) end}
     params:add{type = "control", id = i.."noiseFilterFreq", name = "Filter Freq", controlspec = specs.filterFreq, action=function(value) engine.noiseFilterFreq(i,value) end}
     params:add{type = "control", id = i.."noiseDynFilter", name = "Dynamic Filter", controlspec = specs.dynFilter, action=function(value) engine.noiseDynFilter(i,value) end}
+    params:add{type = "control", id = i.."noiseDynFilterTime", name = "Dynamic Filter Time", controlspec = specs.decay, action=function(value) engine.noiseDynFilterTime(i,value) end}
     params:add{type = "control", id = i.."noiseFilterResonance", name = "Noise Filter Resonance", controlspec = specs.filterResonance, action=function(value) engine.noiseFilterResonance(i,value) end}
+    params:add_separator("Click")
+    params:add{type = "option", id = i.."clickType", name = "Click Type", options = options.click, 1, action=function(value) engine.clickType(i,value) end}
+    params:add{type = "control", id = i.."clickAmp", name = "Amp", controlspec = specs.amp, action=function(value) engine.clickAmp(i,value) end}
     params:add_separator("Mix")
     params:add{type = "control", id = i.."mix", name = "Tone/Noise Mix", controlspec = specs.mix, action=function(value) engine.mix(i,value) end}
     params:add{type = "control", id = i.."distAmt", name = "Distortion Amount", controlspec = specs.dist, action=function(value) engine.distAmt(i,value) end}
