@@ -39,22 +39,25 @@ Northbound {
 						BHiPass4.ar(in, dynFilterEnv, noiseFilterResonance.linexp(0, 20, 1, 0.05))
 					},
 					5: { arg in, dynFilterEnv, noiseFilterResonance = 0;
-						BBandPass.ar(in, dynFilterEnv, noiseFilterResonance.linexp(0, 20, 1, 0.5))
+						BBandPass.ar(in, dynFilterEnv, noiseFilterResonance.linexp(0, 20, 0.5, 0.05))
 					},
 					6: { arg in, dynFilterEnv, noiseFilterResonance = 0;
-						BBandPass.ar(in, dynFilterEnv, noiseFilterResonance.linexp(0, 20, 1, 0.125))
+						BBandPass.ar(in, dynFilterEnv, noiseFilterResonance.linexp(0, 20, 0.125, 0.05))
 					}
 				);
 
 				noiseAmpEnvelopes = (
+					//exp
 					1: { arg vel, noiseAttack=0.01, noiseDecay=0.4, noiseDynDecay=1, stopGate = 1;
 						var diff = noiseDynDecay-noiseDecay;
 						Env.perc(noiseAttack,noiseDecay+(diff*vel),1).kr(gate: stopGate, doneAction: 2)
 					},
+					//lin
 					2: { arg vel, noiseAttack=0.01, noiseDecay=0.4, noiseDynDecay=1, stopGate = 1;
 						var diff = noiseDynDecay-noiseDecay;
 						Env.linen(noiseAttack,0.01,noiseDecay+(diff*vel),1).kr(gate: stopGate, doneAction: 2)
 					},
+					//gate
 					3: { arg vel, noiseAttack=0.01, noiseDecay=0.4, noiseDynDecay=1, stopGate = 1;
 						var diff = noiseDynDecay-noiseDecay;
 						Env.linen(noiseAttack,noiseDecay+(diff*vel),0.01,1).kr(gate: stopGate, doneAction: 2)
@@ -62,32 +65,43 @@ Northbound {
 				);
 
 				waves = (
+					//sine
 					1: {arg pitchEnv = 1, toneFreq = 200, toneSpectra = 0;
 						var toneFreq2 = 2.pow(toneSpectra/120)*toneFreq;
 						Mix.ar([SinOsc.ar(freq: toneFreq*pitchEnv, mul: 0.25),
 							SinOsc.ar(freq: toneFreq2*pitchEnv, mul: 0.25)])
 					},
+					//triangle
 					2: {arg pitchEnv = 1, toneFreq = 200, toneSpectra = 0;
 						var toneFreq2 = 2.pow(toneSpectra/120)*toneFreq;
 						Mix.ar([DPW3Tri.ar(freq: toneFreq*pitchEnv, mul: 0.25),
 							DPW3Tri.ar(freq: toneFreq2*pitchEnv, mul: 0.25)])
 					},
+					//saw
 					3: {arg pitchEnv = 1, toneFreq = 200, toneSpectra = 0;
 						var toneFreq2 = 2.pow(toneSpectra/120)*toneFreq;
 						Mix.ar([SawDPW.ar(freq: toneFreq*pitchEnv, mul: 0.25),
 							SawDPW.ar(freq: toneFreq2*pitchEnv, mul: 0.25)])
 					},
+					//square
 					4: {arg pitchEnv = 1, toneFreq = 200, toneSpectra = 0;
 						var toneFreq2 = 2.pow(toneSpectra/120)*toneFreq;
 						Mix.ar([Pulse.ar(freq: toneFreq*pitchEnv, width: 0.5, mul: 0.25),
 							Pulse.ar(freq: toneFreq2*pitchEnv, width: 0.5, mul: 0.25)])
 					},
+					//pulse
 					5: {arg pitchEnv = 1, toneFreq = 200, toneSpectra = 0;
 						var pw = toneSpectra.linlin(0,99,0.5,0.99);
 						Pulse.ar(freq: toneFreq*pitchEnv, width: pw, mul: 0.5)
 					},
+					// fm
+					6: {arg pitchEnv = 1, toneFreq = 200, toneSpectra = 0, toneFmAmount = 1;
+						var fRatio = toneSpectra.linlin(0,99,0,10);
+						var modFreq = (toneFreq*fRatio).clip(20,20000);
+						PMOsc.ar(carfreq: toneFreq*pitchEnv, modfreq: modFreq, pmindex: toneFmAmount)
+					},
 					//cymbal
-					6: {arg pitchEnv = 1, toneFreq = 200, toneSpectra = 0;
+					7: {arg pitchEnv = 1, toneFreq = 200, toneSpectra = 0;
 						var partials = 15;
 						var spec;
 						spec = Array.fill(2, {
@@ -115,7 +129,7 @@ Northbound {
 						Klank.ar(spec, Decay.ar(Impulse.ar(0), 0.004, WhiteNoise.ar(0.05)),toneFreq,0,5);
 					},
 					//drumhead
-					7: {arg pitchEnv = 1, toneFreq = 200, toneSpectra = 0;
+					8: {arg pitchEnv = 1, toneFreq = 200, toneSpectra = 0;
 						var partials = 15;
 						var spec;
 						spec = Array.fill(2, {
@@ -130,10 +144,12 @@ Northbound {
 				);
 
 				toneAmpEnvelopes = (
+					//exp
 					1: { arg vel, toneAttack=0.01, toneDecay=0.4, toneDynDecay=1, stopGate = 1;
 						var diff = toneDynDecay-toneDecay;
 						Env.perc(toneAttack,toneDecay+(diff*vel),1).kr(gate: stopGate, doneAction: 2)
 					},
+					//lin
 					2: { arg vel, toneAttack=0.01, toneDecay=0.4, toneDynDecay=1, stopGate = 1;
 						var diff = toneDynDecay-toneDecay;
 						Env.linen(toneAttack,0.01,toneDecay+(diff*vel),1).kr(gate: stopGate, doneAction: 2)
@@ -213,7 +229,7 @@ Northbound {
 							out = 0;
 
 							var toneFreq = tonePitch.midicps;
-							var dynBendExpRange = 2.pow(toneBend/12);
+							var dynBendExpRange = 2.pow(toneBend/24);
 							var dynBendFreq = Clip.kr(dynBendExpRange*toneFreq,20,20000);
 							var dynBendDiff = (dynBendFreq-toneFreq)/toneFreq;
 							var dynBendEnv = XLine.kr(1+(dynBendDiff*vel),1,toneBendTime);
@@ -321,6 +337,7 @@ Northbound {
 			\toneWaveType, 1,
 			\tonePitch, 60,
 			\toneSpectra, 0,
+			\toneFmAmount, 1,
 			\toneBend, 0,
 			\toneBendTime, 0.5,
 			\toneFilterFreq, 1000,
