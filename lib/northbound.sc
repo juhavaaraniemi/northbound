@@ -5,7 +5,10 @@ Northbound {
 	classvar <channelKeys;
 	classvar <noiseFilters;
 	classvar <noiseAmpEnvelopes;
-	classvar <waves;
+	classvar <analogWaves;
+	classvar <fmWaves;
+	classvar <cymbalWaves;
+	classvar <drumHeadWaves;
 	classvar <toneAmpEnvelopes;
 	classvar <clicks;
 
@@ -26,82 +29,79 @@ Northbound {
 			s.waitForBoot {
 
 				noiseFilters = (
-					1: { arg in, dynFilterEnv, noiseFilterResonance = 0;
+					1: { arg in, dynFilterEnv, noiseFilterResonance;
 						BLowPass.ar(in, dynFilterEnv, noiseFilterResonance.linexp(0, 20, 1, 0.05))
 					},
-					2: { arg in, dynFilterEnv, noiseFilterResonance = 0;
+					2: { arg in, dynFilterEnv, noiseFilterResonance;
 						BLowPass4.ar(in, dynFilterEnv, noiseFilterResonance.linexp(0, 20, 1, 0.05))
 					},
-					3: { arg in, dynFilterEnv, noiseFilterResonance = 0;
+					3: { arg in, dynFilterEnv, noiseFilterResonance;
 						BHiPass.ar(in, dynFilterEnv, noiseFilterResonance.linexp(0, 20, 1, 0.05))
 					},
-					4: { arg in, dynFilterEnv, noiseFilterResonance = 0;
+					4: { arg in, dynFilterEnv, noiseFilterResonance;
 						BHiPass4.ar(in, dynFilterEnv, noiseFilterResonance.linexp(0, 20, 1, 0.05))
 					},
-					5: { arg in, dynFilterEnv, noiseFilterResonance = 0;
+					5: { arg in, dynFilterEnv, noiseFilterResonance;
 						BBandPass.ar(in, dynFilterEnv, noiseFilterResonance.linexp(0, 20, 0.5, 0.05))
 					},
-					6: { arg in, dynFilterEnv, noiseFilterResonance = 0;
+					6: { arg in, dynFilterEnv, noiseFilterResonance;
 						BBandPass.ar(in, dynFilterEnv, noiseFilterResonance.linexp(0, 20, 0.125, 0.05))
 					}
 				);
 
 				noiseAmpEnvelopes = (
 					//exp
-					1: { arg vel, noiseAttack=0.01, noiseDecay=0.4, noiseDynDecay=1, stopGate = 1;
-						var diff = noiseDynDecay-noiseDecay;
-						Env.perc(noiseAttack,noiseDecay+(diff*vel),1).kr(gate: stopGate, doneAction: 2)
+					1: { arg attack, dynDecay, stopGate = 1;
+						Env.perc(attack,dynDecay,1).kr(gate: stopGate, doneAction: 2)
 					},
 					//lin
-					2: { arg vel, noiseAttack=0.01, noiseDecay=0.4, noiseDynDecay=1, stopGate = 1;
-						var diff = noiseDynDecay-noiseDecay;
-						Env.linen(noiseAttack,0.01,noiseDecay+(diff*vel),1).kr(gate: stopGate, doneAction: 2)
+					2: { arg attack, dynDecay, stopGate = 1;
+						Env.linen(attack,0.01,dynDecay,1).kr(gate: stopGate, doneAction: 2)
 					},
 					//gate
-					3: { arg vel, noiseAttack=0.01, noiseDecay=0.4, noiseDynDecay=1, stopGate = 1;
-						var diff = noiseDynDecay-noiseDecay;
-						Env.linen(noiseAttack,noiseDecay+(diff*vel),0.01,1).kr(gate: stopGate, doneAction: 2)
+					3: { arg attack, dynDecay, stopGate = 1;
+						Env.linen(attack,dynDecay,0.01,1).kr(gate: stopGate, doneAction: 2)
 					}
 				);
 
-				waves = (
+				analogWaves = (
 					//sine
-					1: {arg pitchEnv = 1, toneFreq = 200, toneSpectra = 0;
-						var toneFreq2 = 2.pow(toneSpectra/120)*toneFreq;
-						Mix.ar([SinOsc.ar(freq: toneFreq*pitchEnv, mul: 0.25),
-							SinOsc.ar(freq: toneFreq2*pitchEnv, mul: 0.25)])
+					1: {arg pitchEnv1, pitchEnv2;
+						Mix.ar([SinOsc.ar(freq: pitchEnv1, mul: 0.25),
+							SinOsc.ar(freq: pitchEnv2, mul: 0.25)])
 					},
 					//triangle
-					2: {arg pitchEnv = 1, toneFreq = 200, toneSpectra = 0;
-						var toneFreq2 = 2.pow(toneSpectra/120)*toneFreq;
-						Mix.ar([DPW3Tri.ar(freq: toneFreq*pitchEnv, mul: 0.25),
-							DPW3Tri.ar(freq: toneFreq2*pitchEnv, mul: 0.25)])
+					2: {arg pitchEnv1, pitchEnv2;
+						Mix.ar([DPW3Tri.ar(freq: pitchEnv1, mul: 0.25),
+							DPW3Tri.ar(freq: pitchEnv2, mul: 0.25)])
 					},
 					//saw
-					3: {arg pitchEnv = 1, toneFreq = 200, toneSpectra = 0;
-						var toneFreq2 = 2.pow(toneSpectra/120)*toneFreq;
-						Mix.ar([SawDPW.ar(freq: toneFreq*pitchEnv, mul: 0.25),
-							SawDPW.ar(freq: toneFreq2*pitchEnv, mul: 0.25)])
+					3: {arg pitchEnv1, pitchEnv2;
+						Mix.ar([SawDPW.ar(freq: pitchEnv1, mul: 0.25),
+							SawDPW.ar(freq: pitchEnv2, mul: 0.25)])
 					},
 					//square
-					4: {arg pitchEnv = 1, toneFreq = 200, toneSpectra = 0;
-						var toneFreq2 = 2.pow(toneSpectra/120)*toneFreq;
-						Mix.ar([Pulse.ar(freq: toneFreq*pitchEnv, width: 0.5, mul: 0.25),
-							Pulse.ar(freq: toneFreq2*pitchEnv, width: 0.5, mul: 0.25)])
+					4: {arg pitchEnv1, pitchEnv2;
+						Mix.ar([Pulse.ar(freq: pitchEnv1, width: 0.5, mul: 0.25),
+							Pulse.ar(freq: pitchEnv2, width: 0.5, mul: 0.25)])
 					},
 					//pulse
-					5: {arg pitchEnv = 1, toneFreq = 200, toneSpectra = 0;
-						var pw = toneSpectra.linlin(0,99,0.5,0.99);
-						Pulse.ar(freq: toneFreq*pitchEnv, width: pw, mul: 0.5)
-					},
+					5: {arg pitchEnv1, pitchEnv2, toneSpectra;
+						var pw = toneSpectra.linlin(0,100,0.05,0.95);
+						Pulse.ar(freq: pitchEnv1, width: pw, mul: 0.5)
+					}
+				);
+
+				fmWaves = (
 					// fm
-					6: {arg pitchEnv = 1, toneFreq = 200, toneSpectra = 0, toneFmAmount = 1;
-						var fRatio = toneSpectra.linlin(0,99,0,10);
-						var modFreq = (toneFreq*fRatio).clip(20,20000);
-						PMOsc.ar(carfreq: toneFreq*pitchEnv, modfreq: modFreq, pmindex: toneFmAmount)
-					},
+					1: {arg pitchEnv1, pitchEnv2, dynFilterEnv;
+						PMOsc.ar(carfreq: pitchEnv1, modfreq: pitchEnv2, pmindex: dynFilterEnv, mul: 0.5)
+					}
+				);
+
+				cymbalWaves = (
 					//cymbal
-					7: {arg pitchEnv = 1, toneFreq = 200, toneSpectra = 0;
+					1: {arg pitchEnv = 1, toneFreq = 200, toneSpectra = 0;
 						var partials = 15;
 						var spec;
 						spec = Array.fill(2, {
@@ -127,32 +127,53 @@ Northbound {
 							]
 						});
 						Klank.ar(spec, Decay.ar(Impulse.ar(0), 0.004, WhiteNoise.ar(0.05)),toneFreq,0,5);
-					},
+					}
+				);
+
+				drumHeadWaves = (
 					//drumhead
-					8: {arg pitchEnv = 1, toneFreq = 200, toneSpectra = 0;
-						var partials = 15;
+					1: {arg dynBendEnv1, dynFilterEnv, toneSpectra, dynDecay;
+						var partials = 11;
 						var spec;
 						spec = Array.fill(2, {
 							`[	// rez bank spec
 								[ 1.00,1.59,2.14,2.30,2.65,2.92,3.16,3.50,3.60,3.65,4.06 ], // freqs
-								[ 1.00,1.00,0.30,1.00,0.50,0.45,0.70,0.40,0.20,0.40,0.20 ], // amps
-								[ 0.10,3.00,2.00,0.20,2.40,1.85,2.90,0.20,0.20,1.00,0.20 ] // decays
+								[ 1.00,
+									1.00,
+									(toneSpectra.linlin(0,11,0,0.9)-toneSpectra.linlin(11,100,0,0.9)+0.1)
+									*dynFilterEnv.linlin(0,5.5,0,1),
+									(toneSpectra.linlin(0,22,0,0.9)-toneSpectra.linlin(22,100,0,0.9)+0.1)
+									*dynFilterEnv.linlin(5.5,11,0,1),
+									(toneSpectra.linlin(0,33,0,0.9)-toneSpectra.linlin(33,100,0,0.9)+0.1)
+									*dynFilterEnv.linlin(11,16.5,0,1),
+									(toneSpectra.linlin(0,44,0,0.9)-toneSpectra.linlin(44,100,0,0.9)+0.1)
+									*dynFilterEnv.linlin(16.5,22,0,1),
+									(toneSpectra.linlin(0,55,0,0.9)-toneSpectra.linlin(55,100,0,0.9)+0.1)
+									*dynFilterEnv.linlin(22,27.5,0,1),
+									(toneSpectra.linlin(0,66,0,0.9)-toneSpectra.linlin(66,100,0,0.9)+0.1)
+									*dynFilterEnv.linlin(27.5,33,0,1),
+									(toneSpectra.linlin(0,77,0,0.9)-toneSpectra.linlin(77,100,0,0.9)+0.1)
+									*dynFilterEnv.linlin(33,38.5,0,1),
+									(toneSpectra.linlin(0,88,0,0.9)-toneSpectra.linlin(88,100,0,0.6)+0.1)
+									*dynFilterEnv.linlin(38.5,44,0,1),
+									toneSpectra.linlin(0,99,0.1,1)*dynFilterEnv.linlin(44,50,0,1)],
+								//amps
+								[ 0.20,1.00,1.80,0.20,2.20,0.85,2.00,0.60,0.30,2.00,0.30 ] // decays
+								//nil
 							]
 						});
-						Klank.ar(spec, Decay.ar(Impulse.ar(0), 0.004, 0.01),toneFreq,0,1);
+						DynKlank.ar(spec, Decay.ar(Impulse.ar(0), 0.004, 0.01),dynBendEnv1,0,dynDecay);
 					}
 				);
 
 				toneAmpEnvelopes = (
 					//exp
-					1: { arg vel, toneAttack=0.01, toneDecay=0.4, toneDynDecay=1, stopGate = 1;
-						var diff = toneDynDecay-toneDecay;
-						Env.perc(toneAttack,toneDecay+(diff*vel),1).kr(gate: stopGate, doneAction: 2)
+					1: { arg attack, dynDecay, stopGate = 1;
+						Env.perc(attack,dynDecay,1).kr(gate: stopGate, doneAction: 2)
 					},
 					//lin
-					2: { arg vel, toneAttack=0.01, toneDecay=0.4, toneDynDecay=1, stopGate = 1;
-						var diff = toneDynDecay-toneDecay;
-						Env.linen(toneAttack,0.01,toneDecay+(diff*vel),1).kr(gate: stopGate, doneAction: 2)
+					2: { arg attack, dynDecay, stopGate = 1;
+						Env.linen(attack,0.01,dynDecay,1).kr(gate: stopGate, doneAction: 2)
 					}
 				);
 
@@ -167,10 +188,10 @@ Northbound {
 						BrownNoise.ar(mul: 0.5)*vel
 					},
 					4: { arg vel;
-						LFPulse.ar(freq: 100, width: 0.1, mul: 1)*vel
+						SinOsc.ar(freq: 100, mul: 1)*vel
 					},
 					5: { arg vel;
-						LFPulse.ar(freq: 100, width: 0.3, mul: 1)*vel
+						LFTri.ar(freq: 100, mul: 1)*vel
 					},
 					6: { arg vel;
 						LFPulse.ar(freq: 100, width: 0.5, mul: 1)*vel
@@ -183,29 +204,38 @@ Northbound {
 
 						SynthDef.new(synthdefname, {
 							arg vel = 1.00,
-							noiseAmp = 0.5,
-							noiseFilterFreq = 1000,
+							noiseFilterType = 1,
+							noiseFilterResonance = 0,
+							noiseFreq = 25,
 							noiseDynFilter = 0,
-							noiseDynFilterTime = 0.5,
+							noiseAmpEnvelope = 1,
+							noiseAttack = 0.01,
+							noiseDecay = 0.5,
+							noiseDynDecay = 0.5,
+							noiseAmp = 1.0,
 							out = 0;
 
 							var noise = WhiteNoise.ar();
 
+							var dynDecay = noiseDecay + ((noiseDynDecay-noiseDecay)*vel);
+
 							var ampEnvelope = SynthDef.wrap(
 								envelopefunction,
-								prependArgs: [vel]
+								prependArgs: [noiseAttack,dynDecay]
 							);
 
 							var unfiltered = noise * ampEnvelope * noiseAmp * vel * 0.5;
 
-							var dynFilterExpRange = 2.pow(noiseDynFilter/12);
-							var dynFilterFreq = Clip.kr(dynFilterExpRange*noiseFilterFreq,20,20000);
-							var dynFilterDiff = dynFilterFreq-noiseFilterFreq;
-							var dynFilterEnv = XLine.kr(noiseFilterFreq+(dynFilterDiff*vel),noiseFilterFreq,noiseDynFilterTime);
+
+							var freq = noiseFreq.linexp(0,50,20,20000);
+							var fLo = noiseDynFilter.linexp(-50,0,20,freq);
+							var fHi = noiseDynFilter.linexp(0,50,freq,20000);
+							var diff = (fLo-freq)+(fHi-freq);
+							var dynFilterEnv = XLine.kr(freq+(diff*vel),freq,dynDecay);
 
 							var signal = SynthDef.wrap(
 								filterfunction,
-								prependArgs: [unfiltered, dynFilterEnv]
+								prependArgs: [unfiltered, dynFilterEnv, noiseFilterResonance]
 							);
 
 							Out.ar(out, signal)
@@ -213,45 +243,160 @@ Northbound {
 					};
 				};
 
-				waves.keysValuesDo{arg wavename, wavefunction;
+				analogWaves.keysValuesDo{arg wavename, wavefunction;
 					toneAmpEnvelopes.keysValuesDo{arg envelopename, envelopefunction;
-						var synthdefname = "tone" ++ wavename.asString ++ envelopename.asString;
+						var synthdefname = "tone1" ++ wavename.asString ++ envelopename.asString;
 						SynthDef(synthdefname,{
 							arg vel = 1.00,
-							toneAmp = 1.0,
-							tonePitch = 50,
-							toneSpectra = 0,
+							toneWave = 1,
+							toneSpectra = 50,
+							toneFreq = 50,
+							toneDynFilter = 0,
+							toneAmpEnvelope = 1,
+							toneAttack = 0.01,
+							toneDecay = 0.5,
+							toneDynDecay = 0.5,
+							tonePitch = 60,
 							toneBend = 0,
 							toneBendTime = 0.5,
-							toneFilterFreq = 1000,
-							toneDynFilter = 0,
-							toneDynFilterTime = 0.5,
+							toneAmp = 1.0,
 							out = 0;
 
-							var toneFreq = tonePitch.midicps;
+							var toneFreq1 = tonePitch.midicps;
 							var dynBendExpRange = 2.pow(toneBend/24);
-							var dynBendFreq = Clip.kr(dynBendExpRange*toneFreq,20,20000);
-							var dynBendDiff = (dynBendFreq-toneFreq)/toneFreq;
-							var dynBendEnv = XLine.kr(1+(dynBendDiff*vel),1,toneBendTime);
+							var dynBendFreq1 = Clip.kr(dynBendExpRange*toneFreq1,20,20000);
+							var dynBendDiff1 = dynBendFreq1-toneFreq1;
+							var dynBendEnv1 = XLine.kr(toneFreq1+(dynBendDiff1*vel),toneFreq1,toneBendTime);
+
+							var toneFreq2 = 2.pow(toneSpectra/120)*toneFreq1;
+							var dynBendFreq2 = Clip.kr(dynBendExpRange*toneFreq2,20,20000);
+							var dynBendDiff2 = dynBendFreq2-toneFreq2;
+							var dynBendEnv2 = XLine.kr(toneFreq2+(dynBendDiff2*vel),toneFreq2,toneBendTime);
 
 							var wave = SynthDef.wrap(
 								wavefunction,
-								prependArgs: [dynBendEnv, toneFreq, toneSpectra]
+								prependArgs: [dynBendEnv1, dynBendEnv2, toneSpectra]
 							);
+
+							var dynDecay = toneDecay + ((toneDynDecay-toneDecay)*vel);
 
 							var ampEnvelope = SynthDef.wrap(
 								envelopefunction,
-								prependArgs: [vel]
+								prependArgs: [toneAttack,dynDecay]
 							);
 
 							var unfiltered = wave * ampEnvelope * toneAmp * vel;
 
-							var dynFilterExpRange = 2.pow(toneDynFilter/12);
-							var dynFilterFreq = Clip.kr(dynFilterExpRange*toneFilterFreq,20,20000);
-							var dynFilterDiff = dynFilterFreq-toneFilterFreq;
-							var dynFilterEnv = XLine.kr(toneFilterFreq+(dynFilterDiff*vel),toneFilterFreq,toneDynFilterTime);
+							var freq = toneFreq.linexp(0,50,20,20000);
+							var fHi = toneDynFilter.linexp(0,50,freq,20000);
+							var diff = fHi-freq;
+							var dynFilterEnv = XLine.kr(freq+(diff*vel),freq,dynDecay);
 
 							var signal = BLowPass.ar(unfiltered, dynFilterEnv, 1);
+
+							Out.ar(out,signal);
+						}).add;
+					};
+				};
+
+				fmWaves.keysValuesDo{arg wavename, wavefunction;
+					toneAmpEnvelopes.keysValuesDo{arg envelopename, envelopefunction;
+						var synthdefname = "tone2" ++ wavename.asString ++ envelopename.asString;
+						SynthDef(synthdefname,{
+							arg vel = 1.00,
+							toneWave = 1,
+							toneSpectra = 50,
+							toneFreq = 50,
+							toneDynFilter = 0,
+							toneAmpEnvelope = 1,
+							toneAttack = 0.01,
+							toneDecay = 0.5,
+							toneDynDecay = 0.5,
+							tonePitch = 60,
+							toneBend = 0,
+							toneBendTime = 0.5,
+							toneAmp = 1.0,
+							out = 0;
+
+							var dynDecay = toneDecay + ((toneDynDecay-toneDecay)*vel);
+
+							var toneFreq1 = tonePitch.midicps;
+							var dynBendExpRange = 2.pow(toneBend/24);
+							var dynBendFreq1 = Clip.kr(dynBendExpRange*toneFreq1,20,20000);
+							var dynBendDiff1 = dynBendFreq1-toneFreq1;
+							var dynBendEnv1 = XLine.kr(toneFreq1+(dynBendDiff1*vel),toneFreq1,toneBendTime);
+
+							var fRatio = toneSpectra.linlin(0,100,0,10);
+							var toneFreq2 = (toneFreq1*fRatio).clip(20,20000);
+							var dynBendFreq2 = dynBendExpRange*toneFreq2;
+							var dynBendDiff2 = dynBendFreq2-toneFreq2;
+							var dynBendEnv2 = XLine.kr(toneFreq2+(dynBendDiff2*vel),toneFreq2,toneBendTime);
+
+							var freq = toneFreq+0.01;
+							var fHi = toneDynFilter.linexp(0,50,freq,50);
+							var diff = fHi-freq;
+							var dynFilterEnv = XLine.kr(freq+(diff*vel),freq,dynDecay);
+
+							var wave = SynthDef.wrap(
+								wavefunction,
+								prependArgs: [dynBendEnv1, dynBendEnv2, dynFilterEnv]
+							);
+
+							var ampEnvelope = SynthDef.wrap(
+								envelopefunction,
+								prependArgs: [toneAttack,dynDecay]
+							);
+
+							var signal = wave * ampEnvelope * toneAmp * vel;
+
+							Out.ar(out,signal);
+						}).add;
+					};
+				};
+
+				drumHeadWaves.keysValuesDo{arg wavename, wavefunction;
+					toneAmpEnvelopes.keysValuesDo{arg envelopename, envelopefunction;
+						var synthdefname = "tone3" ++ wavename.asString ++ envelopename.asString;
+						SynthDef(synthdefname,{
+							arg vel = 1.00,
+							toneWave = 1,
+							toneSpectra = 50,
+							toneFreq = 50,
+							toneDynFilter = 0,
+							toneAmpEnvelope = 1,
+							toneAttack = 0.01,
+							toneDecay = 0.5,
+							toneDynDecay = 0.5,
+							tonePitch = 60,
+							toneBend = 0,
+							toneBendTime = 0.5,
+							toneAmp = 1.0,
+							out = 0;
+
+							var dynDecay = toneDecay + ((toneDynDecay-toneDecay)*vel);
+
+							var toneFreq1 = tonePitch.midicps;
+							var dynBendExpRange = 2.pow(toneBend/24);
+							var dynBendFreq1 = Clip.kr(dynBendExpRange*toneFreq1,20,20000);
+							var dynBendDiff1 = dynBendFreq1-toneFreq1;
+							var dynBendEnv1 = XLine.kr(toneFreq1+(dynBendDiff1*vel),toneFreq1,toneBendTime);
+
+							var freq = toneFreq+0.01;
+							var fHi = toneDynFilter.linexp(0,50,freq,50);
+							var diff = fHi-freq;
+							var dynFilterEnv = XLine.kr(freq+(diff*vel),freq,dynDecay);
+
+							var wave = SynthDef.wrap(
+								wavefunction,
+								prependArgs: [dynBendEnv1, dynFilterEnv, toneSpectra, dynDecay]
+							);
+
+							var ampEnvelope = SynthDef.wrap(
+								envelopefunction,
+								prependArgs: [toneAttack,dynDecay]
+							);
+
+							var signal = wave * ampEnvelope * toneAmp * vel;
 
 							Out.ar(out,signal);
 						}).add;
@@ -323,30 +468,31 @@ Northbound {
 		channelGroup = Group.new(s);
 
 		globalParams = Dictionary.newFrom([
-			\noiseAmp, 1.0,
 			\noiseFilterType, 1,
+			\noiseFilterResonance, 0,
 			\noiseFilterFreq, 1000,
 			\noiseDynFilter, 0,
-			\noiseDynFilterTime, 0.5,
-			\noiseFilterResonance, 0,
+			\noiseDynFilterTime, 0.5, // sama kuin decay time
 			\noiseAmpEnvelope, 1,
 			\noiseAttack, 0.01,
 			\noiseDecay, 0.5,
 			\noiseDynDecay, 0.5,
-			\toneAmp, 1.0,
+			\noiseAmp, 1.0,
 			\toneWaveType, 1,
-			\tonePitch, 60,
-			\toneSpectra, 0,
-			\toneFmAmount, 1,
-			\toneBend, 0,
-			\toneBendTime, 0.5,
-			\toneFilterFreq, 1000,
+			\toneWave, 1,
+			\toneSpectra, 50,
+			\toneFreq, 50,
 			\toneDynFilter, 0,
-			\toneDynFilterTime, 0.5,
+			\toneDynFilterTime, 0.5, // sama kuin decay time
 			\toneAmpEnvelope, 1,
 			\toneAttack, 0.01,
 			\toneDecay, 0.5,
 			\toneDynDecay, 0.5,
+			\tonePitch, 60,
+			\toneBend, 0,
+			\toneBendTime, 0.5,
+			\toneAmp, 1.0,
+			\toneFmAmount, 1, // freq tilalle
 			\clickType, 1,
 			\clickAmp, 1.0,
 			\mix, 50,
@@ -375,7 +521,7 @@ Northbound {
 	playVoice { arg channelKey, vel;
 		channels[channelKey].set(\stopGate, -1.05);
 
-		Synth.new("tone"++channelParams[channelKey][\toneWaveType].asInteger++channelParams[channelKey][\toneAmpEnvelope].asInteger,[\out, toneBus[channelKey], \vel, vel] ++ channelParams[channelKey].getPairs, channels[channelKey]);
+		Synth.new("tone"++channelParams[channelKey][\toneWaveType].asInteger++channelParams[channelKey][\toneWave].asInteger++channelParams[channelKey][\toneAmpEnvelope].asInteger,[\out, toneBus[channelKey], \vel, vel] ++ channelParams[channelKey].getPairs, channels[channelKey]);
 
 		Synth.new("noise"++channelParams[channelKey][\noiseFilterType].asInteger++channelParams[channelKey][\noiseAmpEnvelope].asInteger,[\out, noiseBus[channelKey], \vel, vel] ++ channelParams[channelKey].getPairs, channels[channelKey]);
 
