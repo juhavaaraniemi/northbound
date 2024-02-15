@@ -262,16 +262,24 @@ Northbound {
 							toneAmp = 1.0,
 							out = 0;
 
-							var toneFreq1 = tonePitch.midicps;
-							var dynBendExpRange = 2.pow(toneBend/24);
-							var dynBendFreq1 = Clip.kr(dynBendExpRange*toneFreq1,20,20000);
-							var dynBendDiff1 = dynBendFreq1-toneFreq1;
-							var dynBendEnv1 = XLine.kr(toneFreq1+(dynBendDiff1*vel),toneFreq1,toneBendTime);
+							//var toneFreq1 = tonePitch.midicps;
+							//var dynBendExpRange = 2.pow(toneBend/24);
+							//var dynBendFreq1 = Clip.kr(dynBendExpRange*toneFreq1,20,20000);
+							//var dynBendDiff1 = dynBendFreq1-toneFreq1;
+							//var dynBendEnv1 = XLine.kr(toneFreq1+(dynBendDiff1*vel),toneFreq1,toneBendTime);
 
-							var toneFreq2 = 2.pow(toneSpectra/120)*toneFreq1;
-							var dynBendFreq2 = Clip.kr(dynBendExpRange*toneFreq2,20,20000);
-							var dynBendDiff2 = dynBendFreq2-toneFreq2;
-							var dynBendEnv2 = XLine.kr(toneFreq2+(dynBendDiff2*vel),toneFreq2,toneBendTime);
+							var freq1 = tonePitch.midicps;
+							var fLo1 = toneBend.linexp(-50,0,freq1/4,freq1);
+							var fHi1 = toneBend.linexp(0,50,freq1,freq1*4);
+							var diff1 = (fLo1-freq1)+(fHi1-freq1);
+							var dynBendEnv1 = XLine.kr(freq1+(diff1*vel),freq1,toneBendTime);
+
+							var freq2 = 2.pow(toneSpectra/120)*freq1;
+							var fLo2 = toneBend.linexp(-50,0,freq2/4,freq2);
+							var fHi2 = toneBend.linexp(0,50,freq2,freq2*4);
+							var diff2 = (fLo2-freq2)+(fHi2-freq2);
+							var dynBendEnv2 = XLine.kr(freq2+(diff2*vel),freq2,toneBendTime);
+
 
 							var wave = SynthDef.wrap(
 								wavefunction,
@@ -320,17 +328,18 @@ Northbound {
 
 							var dynDecay = toneDecay + ((toneDynDecay-toneDecay)*vel);
 
-							var toneFreq1 = tonePitch.midicps;
-							var dynBendExpRange = 2.pow(toneBend/24);
-							var dynBendFreq1 = Clip.kr(dynBendExpRange*toneFreq1,20,20000);
-							var dynBendDiff1 = dynBendFreq1-toneFreq1;
-							var dynBendEnv1 = XLine.kr(toneFreq1+(dynBendDiff1*vel),toneFreq1,toneBendTime);
+							var freq1 = tonePitch.midicps;
+							var fLo1 = toneBend.linexp(-50,0,freq1/4,freq1);
+							var fHi1 = toneBend.linexp(0,50,freq1,freq1*4);
+							var diff1 = (fLo1-freq1)+(fHi1-freq1);
+							var dynBendEnv1 = XLine.kr(freq1+(diff1*vel),freq1,toneBendTime);
 
 							var fRatio = toneSpectra.linlin(0,100,0,10);
-							var toneFreq2 = (toneFreq1*fRatio).clip(20,20000);
-							var dynBendFreq2 = dynBendExpRange*toneFreq2;
-							var dynBendDiff2 = dynBendFreq2-toneFreq2;
-							var dynBendEnv2 = XLine.kr(toneFreq2+(dynBendDiff2*vel),toneFreq2,toneBendTime);
+							var freq2 = fRatio*freq1;
+							var fLo2 = toneBend.linexp(-50,0,freq2/4,freq2);
+							var fHi2 = toneBend.linexp(0,50,freq2,freq2*4);
+							var diff2 = (fLo2-freq2)+(fHi2-freq2);
+							var dynBendEnv2 = XLine.kr(freq2+(diff2*vel),freq2,toneBendTime);
 
 							var freq = toneFreq+0.01;
 							var fHi = toneDynFilter.linexp(0,50,freq,50);
@@ -375,11 +384,11 @@ Northbound {
 
 							var dynDecay = toneDecay + ((toneDynDecay-toneDecay)*vel);
 
-							var toneFreq1 = tonePitch.midicps;
-							var dynBendExpRange = 2.pow(toneBend/24);
-							var dynBendFreq1 = Clip.kr(dynBendExpRange*toneFreq1,20,20000);
-							var dynBendDiff1 = dynBendFreq1-toneFreq1;
-							var dynBendEnv1 = XLine.kr(toneFreq1+(dynBendDiff1*vel),toneFreq1,toneBendTime);
+							var freq1 = tonePitch.midicps;
+							var fLo1 = toneBend.linexp(-50,0,freq1/4,freq1);
+							var fHi1 = toneBend.linexp(0,50,freq1,freq1*4);
+							var diff1 = (fLo1-freq1)+(fHi1-freq1);
+							var dynBendEnv1 = XLine.kr(freq1+(diff1*vel),freq1,toneBendTime);
 
 							var freq = toneFreq+0.01;
 							var fHi = toneDynFilter.linexp(0,50,freq,50);
