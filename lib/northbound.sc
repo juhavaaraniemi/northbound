@@ -470,9 +470,8 @@ Northbound {
 		globalParams = Dictionary.newFrom([
 			\noiseFilterType, 1,
 			\noiseFilterResonance, 0,
-			\noiseFilterFreq, 1000,
+			\noiseFreq, 25,
 			\noiseDynFilter, 0,
-			\noiseDynFilterTime, 0.5, // sama kuin decay time
 			\noiseAmpEnvelope, 1,
 			\noiseAttack, 0.01,
 			\noiseDecay, 0.5,
@@ -483,7 +482,6 @@ Northbound {
 			\toneSpectra, 50,
 			\toneFreq, 50,
 			\toneDynFilter, 0,
-			\toneDynFilterTime, 0.5, // sama kuin decay time
 			\toneAmpEnvelope, 1,
 			\toneAttack, 0.01,
 			\toneDecay, 0.5,
@@ -492,7 +490,6 @@ Northbound {
 			\toneBend, 0,
 			\toneBendTime, 0.5,
 			\toneAmp, 1.0,
-			\toneFmAmount, 1, // freq tilalle
 			\clickType, 1,
 			\clickAmp, 1.0,
 			\mix, 50,
