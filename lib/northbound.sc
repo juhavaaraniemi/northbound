@@ -274,7 +274,7 @@ Northbound {
 							var diff1 = (fLo1-freq1)+(fHi1-freq1);
 							var dynBendEnv1 = XLine.kr(freq1+(diff1*vel),freq1,toneBendTime);
 
-							var freq2 = 2.pow(toneSpectra/120)*freq1;
+							var freq2 = 2.pow((toneSpectra-50)/120)*freq1;
 							var fLo2 = toneBend.linexp(-50,0,freq2/4,freq2);
 							var fHi2 = toneBend.linexp(0,50,freq2,freq2*4);
 							var diff2 = (fLo2-freq2)+(fHi2-freq2);
