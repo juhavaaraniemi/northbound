@@ -99,37 +99,6 @@ Northbound {
 					}
 				);
 
-				cymbalWaves = (
-					//cymbal
-					1: {arg pitchEnv = 1, toneFreq = 200, toneSpectra = 0;
-						var partials = 15;
-						var spec;
-						spec = Array.fill(2, {
-							`[	// rez bank spec
-								[ 1,
-									1.546569596,
-									1.558360996,
-									1.278099109,
-									1.309519787,
-									1.704369164,
-									1.077652103,
-									1.408275352,
-									1.320529045,
-									1.215599552,
-									1.662845324,
-									1.530539896,
-									1.699431933,
-									1.583876758,
-									1.358325822], // freqs
-								nil, // amps
-								//Array.fill(partials, { 1.0 + 4.0.rand }) // decays
-								[1.00,0.95,0.9,0.85,0.8,0.75,0.7,0.65,0.6,0.55,0.5,0.45,0.4,0.35,0.3] // decays
-							]
-						});
-						Klank.ar(spec, Decay.ar(Impulse.ar(0), 0.004, WhiteNoise.ar(0.05)),toneFreq,0,5);
-					}
-				);
-
 				drumHeadWaves = (
 					//drumhead
 					1: {arg dynBendEnv1, dynFilterEnv, toneSpectra, dynDecay;
@@ -163,6 +132,23 @@ Northbound {
 							]
 						});
 						DynKlank.ar(spec, Decay.ar(Impulse.ar(0), 0.004, 0.01),dynBendEnv1,0,dynDecay);
+					}
+				);
+
+				cymbalWaves = (
+					//cymbal
+					1: {arg dynBendEnv1, dynFilterEnv, toneSpectra, dynDecay;
+						var partials = 15;
+						var spec;
+						spec = Array.fill(2, {
+							`[	// rez bank spec
+								[1, 1.546569596, 1.558360996, 1.278099109, 1.309519787, 1.704369164, 1.077652103, 1.408275352, 1.320529045, 1.215599552, 1.662845324, 1.530539896, 1.699431933, 1.583876758, 1.358325822], // freqs
+								nil, // amps
+								//Array.fill(partials, { 1.0 + 4.0.rand }) // decays
+								[1.00,0.95,0.9,0.85,0.8,0.75,0.7,0.65,0.6,0.55,0.5,0.45,0.4,0.35,0.3] // decays
+							]
+						});
+						DynKlank.ar(spec, Decay.ar(Impulse.ar(0), 0.004, WhiteNoise.ar(0.02)),dynBendEnv1,0,dynDecay);
 					}
 				);
 
@@ -366,6 +352,55 @@ Northbound {
 				drumHeadWaves.keysValuesDo{arg wavename, wavefunction;
 					toneAmpEnvelopes.keysValuesDo{arg envelopename, envelopefunction;
 						var synthdefname = "tone3" ++ wavename.asString ++ envelopename.asString;
+						SynthDef(synthdefname,{
+							arg vel = 1.00,
+							toneWave = 1,
+							toneSpectra = 50,
+							toneFreq = 50,
+							toneDynFilter = 0,
+							toneAmpEnvelope = 1,
+							toneAttack = 0.01,
+							toneDecay = 0.5,
+							toneDynDecay = 0.5,
+							tonePitch = 60,
+							toneBend = 0,
+							toneBendTime = 0.5,
+							toneAmp = 1.0,
+							out = 0;
+
+							var dynDecay = toneDecay + ((toneDynDecay-toneDecay)*vel);
+
+							var freq1 = tonePitch.midicps;
+							var fLo1 = toneBend.linexp(-50,0,freq1/4,freq1);
+							var fHi1 = toneBend.linexp(0,50,freq1,freq1*4);
+							var diff1 = (fLo1-freq1)+(fHi1-freq1);
+							var dynBendEnv1 = XLine.kr(freq1+(diff1*vel),freq1,toneBendTime);
+
+							var freq = toneFreq+0.01;
+							var fHi = toneDynFilter.linexp(0,50,freq,50);
+							var diff = fHi-freq;
+							var dynFilterEnv = XLine.kr(freq+(diff*vel),freq,dynDecay);
+
+							var wave = SynthDef.wrap(
+								wavefunction,
+								prependArgs: [dynBendEnv1, dynFilterEnv, toneSpectra, dynDecay]
+							);
+
+							var ampEnvelope = SynthDef.wrap(
+								envelopefunction,
+								prependArgs: [toneAttack,dynDecay]
+							);
+
+							var signal = wave * ampEnvelope * toneAmp * vel;
+
+							Out.ar(out,signal);
+						}).add;
+					};
+				};
+
+				cymbalWaves.keysValuesDo{arg wavename, wavefunction;
+					toneAmpEnvelopes.keysValuesDo{arg envelopename, envelopefunction;
+						var synthdefname = "tone4" ++ wavename.asString ++ envelopename.asString;
 						SynthDef(synthdefname,{
 							arg vel = 1.00,
 							toneWave = 1,
