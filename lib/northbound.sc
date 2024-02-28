@@ -87,18 +87,37 @@ Northbound {
 					},
 					//pulse
 					5: {arg pitchEnv1, pitchEnv2, toneSpectra;
-						var pw = toneSpectra.linlin(0,100,0.5,1);
+						var pw = toneSpectra.linlin(0,100,0.5,0.95);
 						Pulse.ar(freq: pitchEnv1, width: pw, mul: 0.5)
 					}
 				);
 
 				fmWaves = (
 					1: {arg pitchEnv1, pitchEnv2, dynFilterEnv;
-						PMOsc.ar(carfreq: pitchEnv1, modfreq: pitchEnv2, pmindex: dynFilterEnv, mul: 0.5)
+						var mod1 = SinOsc.ar(freq: pitchEnv2);
+						SinOsc.ar(freq: pitchEnv1, phase: dynFilterEnv*mod1, mul: 0.5);
 					},
 					2: {arg pitchEnv1, pitchEnv2, dynFilterEnv;
-						var mod = SinOscFB.ar(freq: pitchEnv2, feedback: dynFilterEnv*0.1, mul: pitchEnv1*dynFilterEnv);
-						SinOsc.ar(pitchEnv1+mod, mul:0.5)
+						var mod1 = SinOsc.ar(freq: pitchEnv2);
+						var mod2 = SinOsc.ar(freq: pitchEnv2, phase: dynFilterEnv*mod1);
+						SinOsc.ar(freq: pitchEnv1, phase: dynFilterEnv*mod2, mul: 0.5);
+					},
+					3: {arg pitchEnv1, pitchEnv2, dynFilterEnv;
+						var mod1 = SinOsc.ar(freq: pitchEnv2);
+						var mod2 = SinOsc.ar(freq: pitchEnv2);
+						SinOsc.ar(freq: pitchEnv1, phase: (dynFilterEnv*mod1)+(dynFilterEnv*mod2), mul: 0.5);
+					},
+					4: {arg pitchEnv1, pitchEnv2, dynFilterEnv;
+						var mod1 = SinOsc.ar(freq: pitchEnv2, phase: dynFilterEnv/15*LocalIn.ar(1,1));
+						var fb = LocalOut.ar(mod1);
+						var mod2 = SinOsc.ar(freq: pitchEnv2);
+						SinOsc.ar(freq: pitchEnv1, phase: (dynFilterEnv*mod1)+(dynFilterEnv*mod2), mul: 0.5);
+					},
+					5: {arg pitchEnv1, pitchEnv2, dynFilterEnv;
+						var mod1 = SinOsc.ar(freq: pitchEnv2, phase: dynFilterEnv/20*LocalIn.ar(1,1));
+						var fb = LocalOut.ar(mod1);
+						var mod2 = SinOsc.ar(freq: pitchEnv2, phase: dynFilterEnv*mod1);
+						SinOsc.ar(freq: pitchEnv1, phase: dynFilterEnv*mod2, mul: 0.5);
 					}
 				);
 
@@ -138,7 +157,7 @@ Northbound {
 									(toneSpectra.linlin(0,87,0,0.9)-toneSpectra.linlin(87,100,0,0.9)+0.1),
 									toneSpectra.linlin(0,100,0.1,1)],
 								//amps
-								[ 0.20,1.00,1.80,0.20,2.20,0.85,2.00,0.60,0.30,2.00,0.30 ] // decays
+								[ 0.20,1.00,1.80,0.20,2.20,0.85,2.00,0.60,0.30 ] // decays
 								//nil
 							]
 						});
@@ -243,7 +262,8 @@ Northbound {
 							var fLo = noiseDynFilter.linexp(-50,0,20,freq);
 							var fHi = noiseDynFilter.linexp(0,50,freq,20000);
 							var diff = (fLo-freq)+(fHi-freq);
-							var dynFilterEnv = XLine.kr(freq+(diff*vel),freq,dynDecay);
+							var dfEnv = Env(levels: [freq+(diff*vel),freq],times: [dynDecay],curve: -4);
+							var dynFilterEnv = EnvGen.kr(dfEnv);
 
 							var signal = SynthDef.wrap(
 								filterfunction,

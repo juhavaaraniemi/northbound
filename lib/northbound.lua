@@ -11,7 +11,7 @@ options.noiseFilter = {"LP12", "LP24", "HP12", "HP24","BP6", "BP12"}
 options.noiseAmpEnvelope = {"Exp", "Lin", "Gate"}
 options.waveType = {"Analog","FM","Drumhead","Cymbal"}
 options.analogWaves = {"Sine","Tri","Saw","Square","Pulse"}
-options.fmWaves = {"Alg 1","Alg 2"}
+options.fmWaves = {"Alg 1","Alg 2","Alg 3","Alg 4","Alg 5"}
 options.drumheadWaves = {"Bass Drum","Snare"}
 options.cymbalWaves = {"Cymbal 1"}
 options.toneAmpEnvelope = {"Exp", "Lin"}
@@ -110,6 +110,7 @@ function Northbound.add_params()
           params:hide(i.."drumheadWaves")
           params:set(i.."cymbalWaves",1)
         end
+        engine.toneWave(i,1)
         _menu.rebuild_params()
       end}
     params:add{type = "option", id = i.."analogWaves", name = "Wave", options = options.analogWaves, 1, action=function(value) engine.toneWave(i,value) end}
