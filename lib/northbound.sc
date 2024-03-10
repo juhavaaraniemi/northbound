@@ -93,32 +93,46 @@ Northbound {
 				);
 
 				fmWaves = (
-					1: {arg pitchEnv1, pitchEnv2, dynFilterEnv;
-						var mod1 = SinOsc.ar(freq: pitchEnv2);
-						SinOsc.ar(freq: pitchEnv1, phase: dynFilterEnv*mod1, mul: 0.5);
+					1: {arg pitchEnv1, dynFilterEnv, fRatio3, fRatio2, index3, index2, index1, feedback;
+						var limit = 18000;
+						var osc3 = LPF.ar(SinOsc.ar(freq: pitchEnv1*fRatio3, phase: feedback*LocalIn.ar(1,1)),limit);
+						var fb = LocalOut.ar(osc3);
+						var osc2 = LPF.ar(SinOsc.ar(freq: pitchEnv1*fRatio2, phase: index3*osc3),limit);
+						var osc1 = SinOsc.ar(freq: pitchEnv1, phase: index2*osc2)*index1*dynFilterEnv;
+						osc1;
 					},
-					2: {arg pitchEnv1, pitchEnv2, dynFilterEnv;
-						var mod1 = SinOsc.ar(freq: pitchEnv2);
-						var mod2 = SinOsc.ar(freq: pitchEnv2, phase: dynFilterEnv*mod1);
-						SinOsc.ar(freq: pitchEnv1, phase: dynFilterEnv*mod2, mul: 0.5);
+					2: {arg pitchEnv1, dynFilterEnv, fRatio3, fRatio2, index3, index2, index1, feedback;
+						var limit = 18000;
+						var osc3 = LPF.ar(SinOsc.ar(freq: pitchEnv1*fRatio3, phase: feedback*LocalIn.ar(1,1)),limit);
+						var fb = LocalOut.ar(osc3);
+						var osc2 = LPF.ar(SinOsc.ar(freq: pitchEnv1*fRatio2),limit);
+						var osc1 = SinOsc.ar(freq: pitchEnv1, phase: (index2*osc2)+(index3*osc3))*index1;
+						osc1;
 					},
-					3: {arg pitchEnv1, pitchEnv2, dynFilterEnv;
-						var mod1 = SinOsc.ar(freq: pitchEnv2);
-						var mod2 = SinOsc.ar(freq: pitchEnv2);
-						SinOsc.ar(freq: pitchEnv1, phase: (dynFilterEnv*mod1)+(dynFilterEnv*mod2), mul: 0.5);
+					3: {arg pitchEnv1, dynFilterEnv, fRatio3, fRatio2, index3, index2, index1, feedback;
+						var limit = 18000;
+						var osc3 = LPF.ar(SinOsc.ar(freq: pitchEnv1*fRatio3, phase: feedback*LocalIn.ar(1,1)),limit);
+						var fb = LocalOut.ar(osc3);
+						var osc2 = LPF.ar(SinOsc.ar(freq: pitchEnv1*fRatio2, phase: index3*osc3, mul: 0.5),limit)*index2;
+						var osc1 = SinOsc.ar(freq: pitchEnv1, phase: index3*osc3, mul: 0.5)*index1;
+						osc1+osc2;
 					},
-					4: {arg pitchEnv1, pitchEnv2, dynFilterEnv;
-						var mod1 = SinOsc.ar(freq: pitchEnv2, phase: dynFilterEnv/15*LocalIn.ar(1,1));
-						var fb = LocalOut.ar(mod1);
-						var mod2 = SinOsc.ar(freq: pitchEnv2);
-						SinOsc.ar(freq: pitchEnv1, phase: (dynFilterEnv*mod1)+(dynFilterEnv*mod2), mul: 0.5);
+					4: {arg pitchEnv1, dynFilterEnv, fRatio3, fRatio2, index3, index2, index1, feedback;
+						var limit = 18000;
+						var osc3 = LPF.ar(SinOsc.ar(freq: pitchEnv1*fRatio3, phase: feedback*LocalIn.ar(1,1)),limit);
+						var fb = LocalOut.ar(osc3);
+						var osc2 = LPF.ar(SinOsc.ar(freq: pitchEnv1*fRatio2, phase: index3*osc3, mul: 0.5),limit)*index2;
+						var osc1 = SinOsc.ar(freq: pitchEnv1, mul: 0.5)*index1;
+						osc1+osc2;
 					},
-					5: {arg pitchEnv1, pitchEnv2, dynFilterEnv;
-						var mod1 = SinOsc.ar(freq: pitchEnv2, phase: dynFilterEnv/20*LocalIn.ar(1,1));
-						var fb = LocalOut.ar(mod1);
-						var mod2 = SinOsc.ar(freq: pitchEnv2, phase: dynFilterEnv*mod1);
-						SinOsc.ar(freq: pitchEnv1, phase: dynFilterEnv*mod2, mul: 0.5);
-					}
+					5: {arg pitchEnv1, dynFilterEnv, fRatio3, fRatio2, index3, index2, index1, feedback;
+						var limit = 18000;
+						var osc3 = LPF.ar(SinOsc.ar(freq: pitchEnv1*fRatio3, phase: feedback*LocalIn.ar(1,1)),limit, mul: 0.33)*index3;
+						var fb = LocalOut.ar(osc3);
+						var osc2 = LPF.ar(SinOsc.ar(freq: pitchEnv1*fRatio2, phase: index3*osc3, mul: 0.33),limit)*index2;
+						var osc1 = SinOsc.ar(freq: pitchEnv1, mul: 0.33)*index1;
+						osc1+osc2+osc3;
+					};
 				);
 
 				drumHeadWaves = (
@@ -192,6 +206,29 @@ Northbound {
 							]
 						});
 						Klank.ar(spec, Decay.ar(Impulse.ar(0), 0.004, WhiteNoise.ar(0.02)),baseFreq,0,dynDecay);
+					},
+					2: {arg baseFreq, toneSpectra, dynDecay;
+						var osc1 = Pulse.ar(205.3,0.5,0.15);
+						var osc2 = Pulse.ar(369.6,0.5,0.15);
+						var osc3 = Pulse.ar(304.4,0.5,0.15);
+						var osc4 = Pulse.ar(522.7,0.5,0.15);
+						var osc5 = Pulse.ar(800,0.5,0.15); // 359.4-1149.9 Hz, default: 800 Hz
+						var osc6 = Pulse.ar(540,0.5,0.15); // 254.3-627.2 Hz, default: 540 Hz
+						var osc = Mix.ar([osc1,osc2,osc3,osc4,osc5,osc6]);
+
+						var band1 = BPF.ar(osc,3440);
+						var band2 = BPF.ar(osc,7100);
+						var filterOsc = Mix.ar([band1,band2]);
+
+						var hi = filterOsc * EnvGen.kr(Env.perc(0,0.8*dynDecay));
+						var mid = filterOsc * EnvGen.kr(Env.perc(0,1*dynDecay));
+						var low = filterOsc * EnvGen.kr(Env.perc(0,1.5*dynDecay));
+
+						var hiFilter = HPF.ar(hi,10500);
+						var midFilter = RHPF.ar(mid,10000,2);
+						var lowFilter = RHPF.ar(low,7500,2);
+
+						Mix.ar([hiFilter,midFilter,lowFilter])*1.5;
 					}
 				);
 
@@ -354,6 +391,13 @@ Northbound {
 							toneBend = 0,
 							toneBendTime = 0.5,
 							toneAmp = 50,
+							fmRatio1 = 1,
+							fmRatio2 = 1,
+							fmRatio3 = 1,
+							fmIndex1 = 1,
+							fmIndex2 = 2,
+							fmIndex3 = 3,
+							fmFeedback = 0,
 							out = 0;
 
 							var amp = toneAmp.linlin(0,50,0,1);
@@ -366,23 +410,15 @@ Northbound {
 							var diff1 = (fLo1-freq1)+(fHi1-freq1);
 							var dynBendEnv1 = XLine.kr(freq1+(diff1*vel),freq1,toneBendTime);
 
-							var fRatio = toneSpectra.linlin(0,100,0,10);
-							var freq2 = fRatio*freq1;
-							var fLo2 = toneBend.linexp(-50,0,freq2/4,freq2);
-							var fHi2 = toneBend.linexp(0,50,freq2,freq2*4);
-							var diff2 = (fLo2-freq2)+(fHi2-freq2);
-							var dynBendEnv2 = XLine.kr(freq2+(diff2*vel),freq2,toneBendTime);
-
-							var freq = toneFreq.linlin(0,50,0,24);
-							var fHi = toneDynFilter.linlin(0,50,freq,24);
+							var freq = toneFreq.linlin(0,50,0.0,1.0);
+							var fHi = toneDynFilter.linlin(0,50,freq,1.0);
 							var diff = fHi-freq;
-							//var dynFilterEnv = XLine.kr(freq+(diff*vel),freq,dynDecay);
 							var dfEnv = Env(levels: [freq+(diff*vel),freq],times: [dynDecay],curve: -4);
 							var dynFilterEnv = EnvGen.kr(dfEnv);
 
 							var wave = SynthDef.wrap(
 								wavefunction,
-								prependArgs: [dynBendEnv1, dynBendEnv2, dynFilterEnv]
+								prependArgs: [dynBendEnv1, dynFilterEnv, fmRatio3, fmRatio2, fmIndex3, fmIndex2, fmIndex1, fmFeedback]
 							);
 
 							var ampEnvelope = SynthDef.wrap(
@@ -587,6 +623,13 @@ Northbound {
 			\toneBend, 0,
 			\toneBendTime, 0.5,
 			\toneAmp, 50,
+			\fmRatio1, 1,
+			\fmRatio2, 1,
+			\fmRatio3, 1,
+			\fmIndex1, 1,
+			\fmIndex2, 1,
+			\fmIndex3, 1,
+			\fmFeedback, 0,
 			\clickType, 1,
 			\clickAmp, 50,
 			\distAmt, 2,
