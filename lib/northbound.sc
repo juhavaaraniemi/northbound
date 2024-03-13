@@ -180,55 +180,30 @@ Northbound {
 				);
 
 				cymbalWaves = (
-					1: {arg baseFreq, toneSpectra, dynDecay;
+					1: {arg baseFreq, toneSpectra, toneFreq, dynDecay;
 						var partials = 15;
 						var spec;
 						spec = Array.fill(2, {
 							`[	// rez bank spec
-								[1, 1.077652103, 1.215599552, 1.278099109, 1.309519787, 1.320529045, 1.358325822, 1.408275352, 1.530539896, 1.546569596, 1.558360996, 1.583876758, 1.662845324, 1.699431933, 1.704369164], // freqs
-								[1.00,
-									1.00,
-									(toneSpectra.linlin(0,7.7,0,0.9)-toneSpectra.linlin(7.7,100,0,0.9)+0.1),
-									(toneSpectra.linlin(0,15.4,0,0.9)-toneSpectra.linlin(15.4,100,0,0.9)+0.1),
-									(toneSpectra.linlin(0,23.1,0,0.9)-toneSpectra.linlin(23.1,100,0,0.9)+0.1),
-									(toneSpectra.linlin(0,30.8,0,0.9)-toneSpectra.linlin(30.8,100,0,0.9)+0.1),
-									(toneSpectra.linlin(0,38.5,0,0.9)-toneSpectra.linlin(38.5,100,0,0.9)+0.1),
-									(toneSpectra.linlin(0,46.2,0,0.9)-toneSpectra.linlin(46.2,100,0,0.9)+0.1),
-									(toneSpectra.linlin(0,53.9,0,0.9)-toneSpectra.linlin(53.9,100,0,0.9)+0.1),
-									(toneSpectra.linlin(0,61.6,0,0.9)-toneSpectra.linlin(61.6,100,0,0.6)+0.1),
-									(toneSpectra.linlin(0,69.3,0,0.9)-toneSpectra.linlin(69.3,100,0,0.6)+0.1),
-									(toneSpectra.linlin(0,77,0,0.9)-toneSpectra.linlin(77,100,0,0.6)+0.1),
-									(toneSpectra.linlin(0,84.7,0,0.9)-toneSpectra.linlin(84.7,100,0,0.6)+0.1),
-									(toneSpectra.linlin(0,92.4,0,0.9)-toneSpectra.linlin(92.4,100,0,0.6)+0.1),
-									toneSpectra.linlin(0,100,0.1,1)], // amps
-								//Array.fill(partials, { 1.0 + 4.0.rand }) // decays
-								[1.00,0.95,0.9,0.85,0.8,0.75,0.7,0.65,0.6,0.55,0.5,0.45,0.4,0.35,0.3] // decays
-							]
+								[1/toneFreq,
+									1.077652103/toneFreq,
+									1.215599552/toneFreq,
+									1.278099109/toneFreq,
+									1.309519787/toneFreq,
+									1.320529045/toneFreq,
+									1.358325822/toneFreq,
+									1.408275352/toneFreq,
+									1.530539896*toneFreq,
+									1.546569596*toneFreq,
+									1.558360996*toneFreq,
+									1.583876758*toneFreq,
+									1.662845324*toneFreq,
+									1.699431933*toneFreq,
+									1.704369164*toneFreq], // freqs
+								nil,
+								nil]
 						});
-						Klank.ar(spec, Decay.ar(Impulse.ar(0), 0.004, WhiteNoise.ar(0.02)),baseFreq,0,dynDecay);
-					},
-					2: {arg baseFreq, toneSpectra, dynDecay;
-						var osc1 = Pulse.ar(205.3,0.5,0.15);
-						var osc2 = Pulse.ar(369.6,0.5,0.15);
-						var osc3 = Pulse.ar(304.4,0.5,0.15);
-						var osc4 = Pulse.ar(522.7,0.5,0.15);
-						var osc5 = Pulse.ar(800,0.5,0.15); // 359.4-1149.9 Hz, default: 800 Hz
-						var osc6 = Pulse.ar(540,0.5,0.15); // 254.3-627.2 Hz, default: 540 Hz
-						var osc = Mix.ar([osc1,osc2,osc3,osc4,osc5,osc6]);
-
-						var band1 = BPF.ar(osc,3440);
-						var band2 = BPF.ar(osc,7100);
-						var filterOsc = Mix.ar([band1,band2]);
-
-						var hi = filterOsc * EnvGen.kr(Env.perc(0,0.8*dynDecay));
-						var mid = filterOsc * EnvGen.kr(Env.perc(0,1*dynDecay));
-						var low = filterOsc * EnvGen.kr(Env.perc(0,1.5*dynDecay));
-
-						var hiFilter = HPF.ar(hi,10500);
-						var midFilter = RHPF.ar(mid,10000,2);
-						var lowFilter = RHPF.ar(low,7500,2);
-
-						Mix.ar([hiFilter,midFilter,lowFilter])*1.5;
+						Klank.ar(spec, Decay.ar(Impulse.ar(0), 0.002, WhiteNoise.ar(0.012)),baseFreq,0,dynDecay);
 					}
 				);
 
@@ -260,7 +235,7 @@ Northbound {
 						LFTri.ar(freq: 100, mul: 1)*vel
 					},
 					6: { arg vel;
-						LFPulse.ar(freq: 100, width: 0.5, mul: 1)*vel
+						LFPulse.ar(freq: 100, width: 0.9, mul: 1)*vel
 					}
 				);
 
@@ -293,7 +268,6 @@ Northbound {
 							);
 
 							var unfiltered = noise * ampEnvelope * amp * vel * 0.5;
-
 
 							var freq = noiseFreq.linexp(0,50,20,20000);
 							var fLo = noiseDynFilter.linexp(-50,0,20,freq);
@@ -363,7 +337,6 @@ Northbound {
 							var freq = toneFreq.linexp(0,50,freq1,20000);
 							var fHi = toneDynFilter.linexp(0,50,freq,20000);
 							var diff = fHi-freq;
-							//var dynFilterEnv = XLine.kr(freq+(diff*vel),freq,dynDecay);
 							var dfEnv = Env(levels: [freq+(diff*vel),freq],times: [dynDecay],curve: -4);
 							var dynFilterEnv = EnvGen.kr(dfEnv);
 
@@ -473,7 +446,6 @@ Northbound {
 							var freq = toneFreq.linexp(0,50,baseFreq,20000);
 							var fHi = toneDynFilter.linexp(0,50,freq,20000);
 							var diff = fHi-freq;
-							//var dynFilterEnv = XLine.kr(freq+(diff*vel),freq,dynDecay);
 							var dfEnv = Env(levels: [freq+(diff*vel),freq],times: [dynDecay],curve: -4);
 							var dynFilterEnv = EnvGen.kr(dfEnv);
 
@@ -509,9 +481,11 @@ Northbound {
 
 							var baseFreq = tonePitch.midicps;
 
+							var freq = toneFreq.linlin(0,50,0.8,1.2);
+
 							var wave = SynthDef.wrap(
 								wavefunction,
-								prependArgs: [baseFreq, toneSpectra, dynDecay]
+								prependArgs: [baseFreq, toneSpectra, freq, dynDecay]
 							);
 
 							var ampEnvelope = SynthDef.wrap(
@@ -519,16 +493,15 @@ Northbound {
 								prependArgs: [toneAttack,dynDecay]
 							);
 
-							var unfiltered = wave * ampEnvelope * amp * vel;
+							var signal = wave * ampEnvelope * amp * vel;
 
-							var freq = toneFreq.linexp(0,50,baseFreq,20000);
-							var fHi = toneDynFilter.linexp(0,50,freq,20000);
-							var diff = fHi-freq;
-							//var dynFilterEnv = XLine.kr(freq+(diff*vel),freq,dynDecay);
-							var dfEnv = Env(levels: [freq+(diff*vel),freq],times: [dynDecay],curve: -4);
-							var dynFilterEnv = EnvGen.kr(dfEnv);
+							//var freq = toneFreq.linexp(0,50,baseFreq,20000);
+							//var fHi = toneDynFilter.linexp(0,50,freq,20000);
+							//var diff = fHi-freq;
+							//var dfEnv = Env(levels: [freq+(diff*vel),freq],times: [dynDecay],curve: -4);
+							//var dynFilterEnv = EnvGen.kr(dfEnv);
 
-							var signal = BLowPass4.ar(unfiltered, dynFilterEnv, 1);
+							//var signal = BLowPass4.ar(unfiltered, dynFilterEnv, 1);
 
 							Out.ar(out,signal);
 						}).add;
