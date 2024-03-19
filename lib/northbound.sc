@@ -4,12 +4,11 @@ Northbound {
 
 	classvar <channelKeys;
 	classvar <noiseFilters;
-	classvar <noiseAmpEnvelopes;
+	classvar <ampEnvelopes;
 	classvar <analogWaves;
 	classvar <fmWaves;
 	classvar <cymbalWaves;
 	classvar <drumHeadWaves;
-	classvar <toneAmpEnvelopes;
 	classvar <clicks;
 
 	var <globalParams;
@@ -50,7 +49,7 @@ Northbound {
 					}
 				);
 
-				noiseAmpEnvelopes = (
+				ampEnvelopes = (
 					//exp
 					1: { arg attack, dynDecay, stopGate = 1;
 						Env.perc(attack,dynDecay,1).kr(gate: stopGate, doneAction: 2)
@@ -233,17 +232,6 @@ Northbound {
 					}
 				);
 
-				toneAmpEnvelopes = (
-					//exp
-					1: { arg attack, dynDecay, stopGate = 1;
-						Env.perc(attack,dynDecay,1).kr(gate: stopGate, doneAction: 2)
-					},
-					//lin
-					2: { arg attack, dynDecay, stopGate = 1;
-						Env.linen(attack,0.01,dynDecay,1).kr(gate: stopGate, doneAction: 2)
-					}
-				);
-
 				clicks = (
 					1: { arg vel;
 						WhiteNoise.ar(mul: 0.5)*vel
@@ -266,7 +254,7 @@ Northbound {
 				);
 
 				noiseFilters.keysValuesDo{arg filtername, filterfunction;
-					noiseAmpEnvelopes.keysValuesDo{arg envelopename, envelopefunction;
+					ampEnvelopes.keysValuesDo{arg envelopename, envelopefunction;
 						var synthdefname = "noise" ++ filtername.asString ++ envelopename.asString;
 
 						SynthDef.new(synthdefname, {
@@ -313,7 +301,7 @@ Northbound {
 				};
 
 				analogWaves.keysValuesDo{arg wavename, wavefunction;
-					toneAmpEnvelopes.keysValuesDo{arg envelopename, envelopefunction;
+					ampEnvelopes.keysValuesDo{arg envelopename, envelopefunction;
 						var synthdefname = "tone1" ++ wavename.asString ++ envelopename.asString;
 						SynthDef(synthdefname,{
 							arg vel = 1.00,
@@ -374,7 +362,7 @@ Northbound {
 				};
 
 				fmWaves.keysValuesDo{arg wavename, wavefunction;
-					toneAmpEnvelopes.keysValuesDo{arg envelopename, envelopefunction;
+					ampEnvelopes.keysValuesDo{arg envelopename, envelopefunction;
 						var synthdefname = "tone2" ++ wavename.asString ++ envelopename.asString;
 						SynthDef(synthdefname,{
 							arg vel = 1.00,
@@ -433,7 +421,7 @@ Northbound {
 				};
 
 				drumHeadWaves.keysValuesDo{arg wavename, wavefunction;
-					toneAmpEnvelopes.keysValuesDo{arg envelopename, envelopefunction;
+					ampEnvelopes.keysValuesDo{arg envelopename, envelopefunction;
 						var synthdefname = "tone3" ++ wavename.asString ++ envelopename.asString;
 						SynthDef(synthdefname,{
 							arg vel = 1.00,
@@ -483,7 +471,7 @@ Northbound {
 				};
 
 				cymbalWaves.keysValuesDo{arg wavename, wavefunction;
-					toneAmpEnvelopes.keysValuesDo{arg envelopename, envelopefunction;
+					ampEnvelopes.keysValuesDo{arg envelopename, envelopefunction;
 						var synthdefname = "tone4" ++ wavename.asString ++ envelopename.asString;
 						SynthDef(synthdefname,{
 							arg vel = 1.00,
