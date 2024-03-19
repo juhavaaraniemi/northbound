@@ -19,6 +19,7 @@ Northbound {
 	var <toneBus;
 	var <noiseBus;
 	var <clickBus;
+	var <reverbBus;
 
 	*initClass {
 		// 8 channels of drum voices
@@ -200,6 +201,31 @@ Northbound {
 									1.662845324*toneFreq,
 									1.699431933*toneFreq,
 									1.704369164*toneFreq], // freqs
+								nil,
+								nil]
+						});
+						Klank.ar(spec, Decay.ar(Impulse.ar(0), 0.002, WhiteNoise.ar(0.012)),baseFreq,0,dynDecay);
+					},
+					2: {arg baseFreq, toneSpectra, toneFreq, dynDecay;
+						var partials = 15;
+						var spec;
+						spec = Array.fill(2, {
+							`[	// rez bank spec
+								[1.000000000/toneFreq,
+									1.073024212/toneFreq,
+									1.142100270/toneFreq,
+									1.160871339/toneFreq,
+									1.161489100/toneFreq,
+									1.333246288/toneFreq,
+									1.463654217/toneFreq,
+									1.512770094/toneFreq,
+									1.514042228/toneFreq,
+									2.206357270*toneFreq,
+									2.381918485*toneFreq,
+									2.425064303*toneFreq,
+									2.471757350*toneFreq,
+									2.506663174*toneFreq,
+									2.625599981*toneFreq], // freqs
 								nil,
 								nil]
 						});
@@ -538,6 +564,8 @@ Northbound {
 					eqGain = 1,
 					pan = 0,
 					level = 0,
+					reverbSend = 0,
+					send = 0,
 					out = 0;
 
 					var toneSignal = In.ar(tone);
@@ -554,10 +582,31 @@ Northbound {
 					signal = BPeakEQ.ar(signal,eqFreq,1,eqGain/2);
 					// level
 					signal = signal*level.dbamp*0.6;
+					//reverb
+					Out.ar(send,signal*reverbSend.linlin(0,100,0,1));
+					//signal = signal*(1-reverbMix);
 					// pan
 					signal = Pan2.ar(signal,pan);
 
 					Out.ar(out,signal);
+				}).add;
+
+				//reverb
+				SynthDef("reverb", {
+
+					arg in, out = 0;
+					var dry, preProcess, wet, predelay = 0.015;
+
+					dry = In.ar(in);
+					preProcess = tanh(BHiShelf.ar(in: dry, freq: 1000, rs: 1, db: -6, mul: 1.5, add: 0));
+					preProcess = DelayN.ar(in: preProcess, maxdelaytime: predelay, delaytime: predelay);
+					preProcess = preProcess * 0.55;
+					wet = tanh(FreeVerb.ar(in: preProcess, mix: 1, room: 0.7, damp: 0.35, mul: 1.8));
+					//wet = tanh(FreeVerb2.ar(in: preProcess, in2: preProcess, mix: 1, room: 0.7, damp: 0.35, mul: 1.8));
+					//wet = (wet * 0.935);
+
+					Out.ar(out, wet!2);
+
 				}).add;
 			}
 		}
@@ -609,7 +658,8 @@ Northbound {
 			\eqFreq, 500,
 			\eqGain, 1,
 			\pan, 0,
-			\level, 0;
+			\level, 0,
+			\reverbSend, 0;
 		]);
 
 		channels = Dictionary.new;
@@ -617,13 +667,15 @@ Northbound {
 		toneBus = Dictionary.new;
 		noiseBus = Dictionary.new;
 		clickBus = Dictionary.new;
+		reverbBus = Bus.audio(s, 1);
+		Synth("reverb",[\in,reverbBus],channelGroup);
 		channelKeys.do({ arg channelKey;
 			channels[channelKey] = Group.new(channelGroup);
 			channelParams[channelKey] = Dictionary.newFrom(globalParams);
 			toneBus[channelKey] = Bus.audio(s, 1);
 			noiseBus[channelKey] = Bus.audio(s, 1);
 			clickBus[channelKey] = Bus.audio(s, 1);
-			Synth("channelStrip", [\tone,toneBus[channelKey],\noise,noiseBus[channelKey],\click,clickBus[channelKey]],channels[channelKey]);
+			Synth("channelStrip", [\tone,toneBus[channelKey],\noise,noiseBus[channelKey],\click,clickBus[channelKey],\send,reverbBus],channels[channelKey]);
 		});
 	}
 
