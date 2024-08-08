@@ -1,11 +1,26 @@
 -- Northbound 0.1
 
+
+--
+-- LIBRARIES
+--
 Northbound = include 'lib/northbound'
 engine.name="Northbound"
 
+
+--
+-- VARIABLES
+--
+g = grid.connect()
+grid_dirty = true
+
+
+--
+-- INIT FUNCTIONS
+--
 function add_parameters()
   params:add_separator("NORTHBOUND")
-  params:add_group("NORTHBOUND - ROUTING",2)
+  params:add_group("ROUTING",2)
   params:add{
     type = "number",
     id = "midi_in_device",
@@ -14,7 +29,6 @@ function add_parameters()
     max = 16,
     default = 1,
     action = function(value)
-      --note_off_all()
       midi_in_device.event = nil
       midi_in_device = midi.connect(value)
       midi_in_device.event = midi_event
@@ -28,6 +42,23 @@ function add_parameters()
     max=16,
     default=1
   }
+  
+  for i = 1,8 do
+    params:add_group("SEQ CHANNEL "..i,16)
+    for j = 1,16 do
+      params:add{
+        type = "number",
+        id = "step"..i..j,
+        name = "step "..j.." probability",
+        min = 0,
+        max = 100,
+        default = 0,
+        action = function(value)
+        end
+      }
+    end
+  end
+  
 end
 
 function init_midi_devices()
@@ -35,13 +66,49 @@ function init_midi_devices()
   midi_in_device.event = midi_event
 end
   
-
 function init()
   init_midi_devices()
   add_parameters()
   Northbound.add_params()
+  clock.run(step)
+  grid_redraw_metro = metro.init(grid_redraw_event,1/30,-1)
+  grid_redraw_metro:start()
 end
 
+
+--
+-- CLOCK FUNCTIONS
+--
+function grid_redraw_event()
+  if grid_dirty then
+    grid_redraw()
+    grid_dirty = false
+  end
+end
+
+--
+-- STEP SEQUENCER
+--
+function step()
+  step = 1
+  while true do
+    clock.sync(1/4)
+    for i=1,8 do
+      if math.random(100) <= params:get("step"..i..step) then
+        engine.trig(i,1)
+      end
+    end
+    step = step + 1
+    if step > 16 then
+      step = 1
+    end
+  end
+end
+
+
+--
+-- MIDI FUNCTIONS
+--
 function midi_event(data)
   local msg = midi.to_msg(data)
   if msg.ch == params:get("midi_in_channel") then
@@ -52,10 +119,41 @@ function midi_event(data)
   end
 end
 
+
+--
+-- UI FUNCTIONS
+--
 function key(n,z)
   if z == 1 then
     if n == 2 then
       engine.trig(1,1)
     end
   end
+end
+
+function g.key(x,y,z)
+  if z == 1 then
+    if params:get("step"..y..x) == 0 then
+      params:set("step"..y..x,100)
+    else
+        params:set("step"..y..x,0)
+    end
+    grid_dirty = true
+  end
+end
+
+
+--
+-- REDRAW FUNCTIONS
+--
+function grid_redraw()
+  g:all(0)
+  for x=1,16 do
+    for y=1,8 do
+      if params:get("step"..y..x) > 0 then
+        g:led(x,y,10)
+      end
+    end
+  end
+  g:refresh()
 end
