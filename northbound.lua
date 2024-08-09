@@ -53,6 +53,9 @@ function add_parameters()
         max = 1,
         default = 0,
         action = function(value)
+          if value == 1 and params:get("prob"..i..j) == 0 then
+            params:set("prob"..i..j,100)
+          end
         end
       }
       params:add{
@@ -61,8 +64,11 @@ function add_parameters()
         name = "step "..j.." probability",
         min = 0,
         max = 100,
-        default = 0,
+        default = 100,
         action = function(value)
+          if value == 0 then
+            params:set("step"..i..j,0)
+          end
         end
       }
     end
