@@ -1,6 +1,5 @@
 -- Northbound 0.1
 
-
 --
 -- LIBRARIES
 --
@@ -44,11 +43,21 @@ function add_parameters()
   }
   
   for i = 1,8 do
-    params:add_group("SEQ CHANNEL "..i,16)
+    params:add_group("SEQ CHANNEL "..i,32)
     for j = 1,16 do
       params:add{
         type = "number",
         id = "step"..i..j,
+        name = "step "..j.." on",
+        min = 0,
+        max = 1,
+        default = 0,
+        action = function(value)
+        end
+      }
+      params:add{
+        type = "number",
+        id = "prob"..i..j,
         name = "step "..j.." probability",
         min = 0,
         max = 100,
@@ -58,8 +67,21 @@ function add_parameters()
       }
     end
   end
-  
 end
+
+function init_grid_variables()
+  counter = {}
+  alt = {}
+  for x = 1,16 do
+    counter[x] = {}
+    alt[x] = {}
+    for y = 1,8 do
+      counter[x][y] = nil
+      alt[x][y] = false
+    end
+  end  
+end
+
 
 function init_midi_devices()
   midi_in_device = midi.connect(1)
@@ -70,6 +92,7 @@ function init()
   init_midi_devices()
   add_parameters()
   Northbound.add_params()
+  init_grid_variables()
   clock.run(step)
   grid_redraw_metro = metro.init(grid_redraw_event,1/30,-1)
   grid_redraw_metro:start()
@@ -94,8 +117,10 @@ function step()
   while true do
     clock.sync(1/4)
     for i=1,8 do
-      if math.random(100) <= params:get("step"..i..step) then
-        engine.trig(i,1)
+      if params:get("step"..i..step) == 1 then
+        if math.random(100) <= params:get("prob"..i..step) then
+          engine.trig(i,1)
+        end
       end
     end
     step = step + 1
@@ -131,15 +156,52 @@ function key(n,z)
   end
 end
 
+function enc(n,d)
+  if n == 1 then
+    --params:delta("scale",d)
+    for x=1,16 do
+      for y=1,8 do
+        if alt[x][y] then
+          params:delta("prob"..y..x,d)
+        end
+      end
+    end
+  end
+  --screen_dirty = true
+end
+
 function g.key(x,y,z)
   if z == 1 then
-    if params:get("step"..y..x) == 0 then
-      params:set("step"..y..x,100)
+    counter[x][y] = clock.run(long_press,x,y)
+  elseif z == 0 then
+    if counter[x][y] then
+      clock.cancel(counter[x][y])
+      short_press(x,y)
     else
-        params:set("step"..y..x,0)
+      long_release(x,y)
     end
-    grid_dirty = true
   end
+end
+
+function short_press(x,y)
+  if params:get("step"..y..x) == 0 then
+    params:set("step"..y..x,1)
+  else
+    params:set("step"..y..x,0)
+  end
+  grid_dirty = true
+end
+
+function long_press(x,y)
+  clock.sleep(0.25)
+  alt[x][y] = true
+  counter[x][y] = nil
+  grid_dirty = true
+end
+
+function long_release(x,y)
+  alt[x][y] = false
+  grid_dirty = true
 end
 
 
