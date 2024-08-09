@@ -69,6 +69,10 @@ function add_parameters()
           if value == 0 then
             params:set("step"..i..j,0)
           end
+          if params:get("step"..i..j) == 1 then
+            brightness[j][i] = math.ceil(value/100*15)
+            --print(j..","..i..","..brightness[j][i])
+          end
         end
       }
     end
@@ -78,12 +82,15 @@ end
 function init_grid_variables()
   counter = {}
   alt = {}
+  brightness = {}
   for x = 1,16 do
     counter[x] = {}
     alt[x] = {}
+    brightness[x] = {}
     for y = 1,8 do
       counter[x][y] = nil
       alt[x][y] = false
+      brightness[x][y] = 15
     end
   end  
 end
@@ -164,7 +171,6 @@ end
 
 function enc(n,d)
   if n == 1 then
-    --params:delta("scale",d)
     for x=1,16 do
       for y=1,8 do
         if alt[x][y] then
@@ -173,7 +179,7 @@ function enc(n,d)
       end
     end
   end
-  --screen_dirty = true
+  grid_dirty = true
 end
 
 function g.key(x,y,z)
@@ -219,7 +225,8 @@ function grid_redraw()
   for x=1,16 do
     for y=1,8 do
       if params:get("step"..y..x) > 0 then
-        g:led(x,y,10)
+        g:led(x,y,brightness[x][y])
+        --g:led(x,y,10)
       end
     end
   end
