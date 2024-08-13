@@ -43,7 +43,7 @@ function add_parameters()
   }
   
   for i = 1,8 do
-    params:add_group("SEQ CHANNEL "..i,32)
+    params:add_group("SEQ CHANNEL "..i,48)
     for j = 1,16 do
       params:add{
         type = "number",
@@ -53,8 +53,12 @@ function add_parameters()
         max = 1,
         default = 0,
         action = function(value)
-          if value == 1 and params:get("prob"..i..j) == 0 then
-            params:set("prob"..i..j,100)
+          if value == 1 then
+            if params:get("prob"..i..j) == 0 then
+              params:set("prob"..i..j,100)
+            elseif params:get("vel"..i..j) == 0 then
+              params:set("vel"..i..j,100)
+            end
           end
         end
       }
@@ -71,13 +75,53 @@ function add_parameters()
           end
           if params:get("step"..i..j) == 1 then
             brightness[j][i] = math.ceil(value/100*15)
-            --print(j..","..i..","..brightness[j][i])
+          end
+        end
+      }
+      params:add{
+        type = "number",
+        id = "vel"..i..j,
+        name = "step "..j.." velocity",
+        min = 0,
+        max = 127,
+        default = 100,
+        action = function(value)
+          if value == 0 then
+            params:set("step"..i..j,0)
           end
         end
       }
     end
   end
 end
+
+function read_params()
+  param_select = {}
+  for i=1,params.count do
+    local p = params:lookup_param(i)
+    if p.t == 3 or p.t == 5 or p.t == 1 or p.t == 2 then
+      table.insert(param_select,p.id)
+      --param_select[p.id] = p.name
+      --print(p.name)
+    end
+  end
+end
+
+function init_plocks()
+  params:add_group("PLOCKS",20)
+  for i=1,20 do
+    params:add{
+      type = "option",
+      id = i.."plock",
+      name = "plock "..i,
+      options = param_select,
+      default = 1,
+      action = function(value)
+      end
+    }
+  end
+end
+
 
 function init_grid_variables()
   counter = {}
@@ -103,8 +147,10 @@ end
   
 function init()
   init_midi_devices()
-  add_parameters()
   Northbound.add_params()
+  --read_params()
+  --init_plocks()
+  add_parameters()
   init_grid_variables()
   clock.run(step)
   grid_redraw_metro = metro.init(grid_redraw_event,1/30,-1)
@@ -132,7 +178,7 @@ function step()
     for i=1,8 do
       if params:get("step"..i..step) == 1 then
         if math.random(100) <= params:get("prob"..i..step) then
-          engine.trig(i,1)
+          engine.trig(i,params:get("vel"..i..step)/127)
         end
       end
     end
@@ -170,11 +216,13 @@ function key(n,z)
 end
 
 function enc(n,d)
-  if n == 1 then
-    for x=1,16 do
-      for y=1,8 do
-        if alt[x][y] then
+  for x=1,16 do
+    for y=1,8 do
+      if alt[x][y] then
+        if n == 1 then  
           params:delta("prob"..y..x,d)
+        elseif n == 2 then
+          params:delta("vel"..y..x,d)
         end
       end
     end
