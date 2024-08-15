@@ -180,8 +180,8 @@ function init()
   add_parameters()
   init_grid_variables()
   init_poll_params()
-  --mftconf.load_conf(midi_ctrl_device,PATH.."mft_dd.mfs")
-  --mftconf.refresh_values(midi_ctrl_device)
+  mftconf.load_conf(midi_ctrl_device,PATH.."mft_dd.mfs")
+  mftconf.refresh_values(midi_ctrl_device)
   clock.run(step)
   grid_redraw_metro = metro.init(grid_redraw_event,1/30,-1)
   grid_redraw_metro:start()
@@ -213,12 +213,11 @@ function poll_params_event()
   for i=1,params.count do
     param_id = params:get_id(i)
     if param_values[param_id] ~= params:get(param_id) then
-      --params:get_id(i)
       last_param_id = param_id
       last_param_name = params:lookup_param(i).name
       last_param_value = params:string(param_id)
       param_values[param_id] = params:get(param_id)
-      --mftconf.mft_redraw(midi_ctrl_device,last_param_id)
+      mftconf.mft_redraw(midi_ctrl_device,last_param_id)
       screen_dirty = true
     end
   end
