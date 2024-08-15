@@ -74,7 +74,7 @@ function Northbound.add_params()
   params:add_separator("NORTHBOUND ENGINE")
 
   --common for midi mapping
-  params:add_group("COMMON",47)
+  params:add_group("COMMON",48)
   --channel select for common
   params:add{type = "number", id = "channelSelect", name = "Channel Select", min = 1, max = 8, default = 1,
     action=function(value) 
@@ -106,6 +106,7 @@ function Northbound.add_params()
       params:set("toneDecay",params:get(value.."toneDecay"))
       params:set("toneDynDecay",params:get(value.."toneDynDecay"))
       params:set("tonePitch",params:get(value.."tonePitch"))
+      params:set("toneBend",params:get(value.."toneBend"))
       params:set("toneBendTime",params:get(value.."toneBendTime"))
       params:set("clickType",params:get(value.."clickType"))
       params:set("clickAmp",params:get(value.."clickAmp"))
@@ -226,6 +227,7 @@ function Northbound.add_params()
   params:add{type = "control", id = "toneDecay", name = "Decay (min vel)", controlspec = specs.decay, action=function(value) params:set(params:get("channelSelect").."toneDecay",value) end}
   params:add{type = "control", id = "toneDynDecay", name = "Decay (max vel)", controlspec = specs.decay, action=function(value) params:set(params:get("channelSelect").."toneDynDecay",value) end}
   params:add{type = "control", id = "tonePitch", name = "Pitch", controlspec = specs.pitch, action=function(value) params:set(params:get("channelSelect").."tonePitch",value) end}
+  params:add{type = "control", id = "toneBend", name = "Bend", controlspec = specs.bend, action=function(value) params:set(params:get("channelSelect").."toneBend",value) end}
   params:add{type = "control", id = "toneBendTime", name = "Bend Time", controlspec = specs.decay, action=function(value) params:set(params:get("channelSelect").."toneBendTime",value) end}
   
   params:add_separator("Click")
