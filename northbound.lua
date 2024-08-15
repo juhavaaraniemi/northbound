@@ -5,6 +5,8 @@
 --
 Northbound = include 'lib/northbound'
 engine.name="Northbound"
+package.loaded["mftconf/lib/mftconf"] = nil
+mftconf = require "mftconf/lib/mftconf"
 
 
 --
@@ -12,6 +14,8 @@ engine.name="Northbound"
 --
 g = grid.connect()
 grid_dirty = true
+screen_dirty = true
+PATH = _path.data.."northbound/"
 
 
 --
@@ -19,7 +23,7 @@ grid_dirty = true
 --
 function add_parameters()
   params:add_separator("NORTHBOUND")
-  params:add_group("ROUTING",2)
+  params:add_group("ROUTING",3)
   params:add{
     type = "number",
     id = "midi_in_device",
@@ -40,6 +44,17 @@ function add_parameters()
     min=1,
     max=16,
     default=1
+  }
+  params:add{
+    type = "number",
+    id = "midi_ctrl_device",
+    name = "midi ctrl device",
+    min = 1,
+    max = 4,
+    default = 2,
+    action = function(value)
+      midi_ctrl_device = midi.connect(value)
+    end
   }
   
   for i = 1,8 do
@@ -143,8 +158,20 @@ end
 function init_midi_devices()
   midi_in_device = midi.connect(1)
   midi_in_device.event = midi_event
+  midi_ctrl_device = midi.connect(2)
 end
-  
+
+function init_poll_params()
+  last_param_id = ""
+  last_param_name = ""
+  last_param_value = ""
+  param_values = {}
+  for i=1,params.count do
+    param_id = params:get_id(i)
+    param_values[param_id] = params:get(param_id)
+  end
+end
+
 function init()
   init_midi_devices()
   Northbound.add_params()
@@ -152,9 +179,16 @@ function init()
   --init_plocks()
   add_parameters()
   init_grid_variables()
+  init_poll_params()
+  --mftconf.load_conf(midi_ctrl_device,PATH.."mft_dd.mfs")
+  --mftconf.refresh_values(midi_ctrl_device)
   clock.run(step)
   grid_redraw_metro = metro.init(grid_redraw_event,1/30,-1)
   grid_redraw_metro:start()
+  redraw_metro = metro.init(redraw_event, 1/30, -1)
+  redraw_metro:start()
+  poll_params_metro = metro.init(poll_params_event, 1/30, -1)
+  poll_params_metro:start()
 end
 
 
@@ -165,6 +199,28 @@ function grid_redraw_event()
   if grid_dirty then
     grid_redraw()
     grid_dirty = false
+  end
+end
+
+function redraw_event()
+  if screen_dirty then
+    redraw()
+    screen_dirty = false
+  end
+end
+
+function poll_params_event()
+  for i=1,params.count do
+    param_id = params:get_id(i)
+    if param_values[param_id] ~= params:get(param_id) then
+      --params:get_id(i)
+      last_param_id = param_id
+      last_param_name = params:lookup_param(i).name
+      last_param_value = params:string(param_id)
+      param_values[param_id] = params:get(param_id)
+      --mftconf.mft_redraw(midi_ctrl_device,last_param_id)
+      screen_dirty = true
+    end
   end
 end
 
@@ -279,4 +335,24 @@ function grid_redraw()
     end
   end
   g:refresh()
+end
+
+function redraw()
+  screen.clear()
+  screen.level(15)
+  --screen.move(0,11)
+  --screen.text("audio: "..params:string("audio"))
+  --screen.move(0,18)
+  --screen.text("midi: "..params:string("midi"))
+  screen.move(0,28)
+  screen.text("last: "..last_param_name)
+  screen.move(0,35)
+  screen.text("value: "..last_param_value)
+  screen.move(0,46)
+  --screen.text("transpose y: "..params:get("ytranspose"))
+  --screen.move(0,53)
+  --screen.text("root note: "..musicutil.note_num_to_name(params:get("root_note"), false))
+  --screen.move(0,60)
+  --screen.text("scale: "..scale_names[params:get("scale")])
+  screen.update()
 end
