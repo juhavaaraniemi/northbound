@@ -110,35 +110,8 @@ function add_parameters()
   end
 end
 
-function read_params()
-  param_select = {}
-  for i=1,params.count do
-    local p = params:lookup_param(i)
-    if p.t == 3 or p.t == 5 or p.t == 1 or p.t == 2 then
-      table.insert(param_select,p.id)
-      --param_select[p.id] = p.name
-      --print(p.name)
-    end
-  end
-end
-
-function init_plocks()
-  params:add_group("PLOCKS",20)
-  for i=1,20 do
-    params:add{
-      type = "option",
-      id = i.."plock",
-      name = "plock "..i,
-      options = param_select,
-      default = 1,
-      action = function(value)
-      end
-    }
-  end
-end
-
-
 function init_grid_variables()
+  global_alt = false
   counter = {}
   alt = {}
   brightness = {}
@@ -161,34 +134,111 @@ function init_midi_devices()
   midi_ctrl_device = midi.connect(2)
 end
 
-function init_poll_params()
-  last_param_id = ""
-  last_param_name = ""
-  last_param_value = ""
-  param_values = {}
+function init_ui_params()
+  channel_params = {}
+  
+  params:add_group("NORTHBOUND UI PARAMS",43)
+  
+  params:add_number("ui_channelSelect","Channel Select",1,8,1)
+  
   for i=1,params.count do
-    param_id = params:get_id(i)
-    param_values[param_id] = params:get(param_id)
+    local p = params:lookup_param(i)
+    
+    if string.sub(p.id,1,3) == "ch1" then
+      local pid = string.sub(p.id,4)
+      
+      if p.t == 0 then
+        params:add_separator("ui_"..pid,p.name)
+      elseif p.t == 2 then
+        params:add_option("ui_"..pid,p.name,p.options,p.default)
+        params:set_action("ui_"..pid,
+          function(value)
+            local eid = "ch"..params:get("ui_channelSelect")..pid
+            for x=1,16 do
+              for y=1,8 do
+                if alt[x][y] then
+                  step_params[y][x][eid] = value
+                  active_plocks[eid] = true
+                  print("step_params"..step_params[y][x][eid])
+                end
+              end
+            end
+            if not global_alt then
+              channel_params[eid]= value
+              print("channel_params:"..channel_params[eid])
+              params:set(eid,value)
+            end
+          end
+          )
+      elseif p.t == 3 then
+        params:add_control("ui_"..pid,p.name,p.controlspec)
+        params:set_action("ui_"..pid,
+          function(value)
+            local eid = "ch"..params:get("ui_channelSelect")..pid
+            for x=1,16 do
+              for y=1,8 do
+                if alt[x][y] then
+                  step_params[y][x][eid] = value
+                  active_plocks[eid] = true
+                  print("step_params"..step_params[y][x][eid])
+                end
+              end
+            end
+            if not global_alt then
+              channel_params[eid]= value
+              print("channel_params:"..channel_params[eid])
+              params:set(eid,value)
+            end
+          end
+          )
+      end
+      
+    end
+    -- create channel value store
+    if string.sub(p.id,1,2) == "ch" then
+      if p.t == 2 or p.t == 3 or p.t == 5 then
+        channel_params[p.id] = params:get(p.id)
+      end
+    end
+
+  params:set_action("ui_channelSelect",
+    function(value)
+      for k,v in pairs(channel_params) do
+        if tonumber(string.sub(k,3,3)) == value then
+          print("ui_"..string.sub(k,4))
+          params:set("ui_"..string.sub(k,4),v)
+        end
+      end
+    end
+    )
+
+  end
+end
+
+function init_step_params()
+  step_params = {}
+  active_plocks = {}
+  for ch=1,8 do
+    step_params[ch] = {}
+    for step=1,16 do
+      step_params[ch][step] = {}
+    end
   end
 end
 
 function init()
   init_midi_devices()
   Northbound.add_params()
-  --read_params()
-  --init_plocks()
   add_parameters()
+  init_ui_params()
+  init_step_params()
   init_grid_variables()
-  init_poll_params()
-  mftconf.load_conf(midi_ctrl_device,PATH.."mft_dd.mfs")
-  mftconf.refresh_values(midi_ctrl_device)
+  --mftconf.load_conf(midi_ctrl_device,PATH.."mft_dd.mfs")
+  --mftconf.refresh_values(midi_ctrl_device)
   clock.run(step)
   grid_redraw_metro = metro.init(grid_redraw_event,1/30,-1)
   grid_redraw_metro:start()
   redraw_metro = metro.init(redraw_event, 1/30, -1)
-  redraw_metro:start()
-  poll_params_metro = metro.init(poll_params_event, 1/30, -1)
-  poll_params_metro:start()
 end
 
 
@@ -209,19 +259,6 @@ function redraw_event()
   end
 end
 
-function poll_params_event()
-  for i=1,params.count do
-    param_id = params:get_id(i)
-    if param_values[param_id] ~= params:get(param_id) then
-      last_param_id = param_id
-      last_param_name = params:lookup_param(i).name
-      last_param_value = params:string(param_id)
-      param_values[param_id] = params:get(param_id)
-      mftconf.mft_redraw(midi_ctrl_device,last_param_id)
-      screen_dirty = true
-    end
-  end
-end
 
 --
 -- STEP SEQUENCER
@@ -233,6 +270,24 @@ function step()
     for i=1,8 do
       if params:get("step"..i..step) == 1 then
         if math.random(100) <= params:get("prob"..i..step) then
+
+          --set parameters for step
+          if next(step_params[i][step]) == nil then
+            for k,v in pairs(active_plocks) do
+              if tonumber(string.sub(k,3,3)) == i then
+                print("here")
+                params:set(k,channel_params[k])
+              end
+            end
+          else
+            for k,v in pairs(step_params[i][step]) do
+              --print(string.sub(k,3,3))
+              if tonumber(string.sub(k,3,3)) == i then
+                print("should be happening")
+                params:set(k,v)
+              end
+            end
+          end
           engine.trig(i,params:get("vel"..i..step)/127)
         end
       end
@@ -310,13 +365,42 @@ end
 function long_press(x,y)
   clock.sleep(0.25)
   alt[x][y] = true
+  global_alt = true
   counter[x][y] = nil
   grid_dirty = true
 end
 
 function long_release(x,y)
   alt[x][y] = false
+  global_alt = false
   grid_dirty = true
+end
+
+
+--
+-- HELPER FUNCTIONS
+--
+function deepcopy(orig)
+    local orig_type = type(orig)
+    local copy
+    if orig_type == 'table' then
+        copy = {}
+        for orig_key, orig_value in next, orig, nil do
+            copy[deepcopy(orig_key)] = deepcopy(orig_value)
+        end
+        setmetatable(copy, deepcopy(getmetatable(orig)))
+    else -- number, string, boolean, etc
+        copy = orig
+    end
+    return copy
+end
+
+function shallow_copy(t)
+  local t2 = {}
+  for k,v in pairs(t) do
+    t2[k] = v
+  end
+  return t2
 end
 
 
@@ -329,7 +413,6 @@ function grid_redraw()
     for y=1,8 do
       if params:get("step"..y..x) > 0 then
         g:led(x,y,brightness[x][y])
-        --g:led(x,y,10)
       end
     end
   end
@@ -344,9 +427,9 @@ function redraw()
   --screen.move(0,18)
   --screen.text("midi: "..params:string("midi"))
   screen.move(0,28)
-  screen.text("last: "..last_param_name)
+  --screen.text("last: "..last_param_name)
   screen.move(0,35)
-  screen.text("value: "..last_param_value)
+  --screen.text("value: "..last_param_value)
   screen.move(0,46)
   --screen.text("transpose y: "..params:get("ytranspose"))
   --screen.move(0,53)
