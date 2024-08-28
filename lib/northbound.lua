@@ -197,4 +197,24 @@ function Northbound.add_params()
   params:bang()
 end
 
+function Northbound.update_wave_options(wave_param,value)
+  local wave = params:lookup_param(wave_param)
+  if value == 1 then
+    wave.options = options.analogWaves
+    wave.count = #options.analogWaves
+  elseif value == 2 then
+    wave.options = options.fmWaves
+    wave.count = #options.fmWaves
+  elseif value == 3 then
+    wave.options = options.drumheadWaves
+    wave.count = #options.drumheadWaves
+  elseif value == 4 then
+    wave.options = options.cymbalWaves
+    wave.count = #options.cymbalWaves
+  end
+  wave.selected = 1
+end
+
+
+
 return Northbound
