@@ -180,6 +180,7 @@ function init_param_actions()
   params:set_action("ui_toneWaveType",
     function(value)
       Northbound.update_wave_options("ui_toneWave",value)
+      store_param_values("toneWaveType",value)
     end
   )
 end
@@ -225,16 +226,14 @@ function step()
   step = 1
   while true do
     clock.sync(1/4)
-    --send params to engine
-    --set_params(step)
-    for i=1,8 do
-      if params:get("step"..i..step) == 1 then
-        --set params to engine for step
-        --set_params_for_step(i,step)
+    for ch=1,8 do
+      if params:get("step"..ch..step) == 1 then
+        --send params to engine
+        set_params(ch,step)
         
         --if probability then trigger step
-        if math.random(100) <= params:get("prob"..i..step) then
-          engine.trig(i,params:get("vel"..i..step)/127)
+        if math.random(100) <= params:get("prob"..ch..step) then
+          engine.trig(ch,params:get("vel"..ch..step)/127)
         end
       end
     end
@@ -351,11 +350,14 @@ function channel_params_to_ui(ch)
 end
 
 --OK
-function set_params(step)
+function set_params(ch,step)
   for param, t in pairs(plock) do
-    --if plock for step exists send step params to engine
-    if plock[param][step] ~= nil then
-      params:set(param,plock[param][step])
+    --if params exist for current ch
+    if string.sub(param,3,3) == ch then
+      --if plock for step exists send step params to engine
+      if plock[param][step] ~= nil then
+        params:set(param,plock[param][step])
+      end
     --if plock exists for param but not for step then send channel params to engine
     else
       params:set(param,channel_params[param])
@@ -365,16 +367,16 @@ end
 
 function store_param_values(pid,value)
   local eid = "ch"..params:get("ui_channelSelect")..pid
-    if step_selected() then
-      ch, step = selected_step()
-      plock[eid] = {}
-      plock[eid][step] = value
-    else
-      channel_params[eid] = value
-      if plock[eid] == nil then
-        params:set(eid,value)
-      end
+  if step_selected() then
+    ch, step = selected_step()
+    plock[eid] = {}
+    plock[eid][step] = value
+  else
+    channel_params[eid] = value
+    if plock[eid] == nil then
+      params:set(eid,value)
     end
+  end
 end
 
 function remove_plock()
