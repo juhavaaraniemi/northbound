@@ -89,7 +89,7 @@ function add_parameters()
             params:set("step"..i..j,0)
           end
           if params:get("step"..i..j) == 1 then
-            brightness[j][i] = math.ceil(value/100*15)
+            --brightness[j][i] = math.ceil(value/100*15)
           end
         end
       }
@@ -113,15 +113,14 @@ end
 function init_grid_variables()
   global_alt = false
   counter = {}
-  alt = {}
+  alt_x = nil
+  alt_y = nil
   brightness = {}
   for x = 1,16 do
     counter[x] = {}
-    alt[x] = {}
     brightness[x] = {}
     for y = 1,8 do
       counter[x][y] = nil
-      alt[x][y] = false
       brightness[x][y] = 15
     end
   end  
@@ -136,71 +135,38 @@ end
 
 function init_ui_params()
   channel_params = {}
-  
+  plock = {}
   params:add_group("NORTHBOUND UI PARAMS",43)
-  
   params:add_number("ui_channelSelect","Channel Select",1,8,1)
   
+  --create ui params
   for i=1,params.count do
     local p = params:lookup_param(i)
     
     if string.sub(p.id,1,3) == "ch1" then
       local pid = string.sub(p.id,4)
-      
+
       if p.t == 0 then
         params:add_separator("ui_"..pid,p.name)
       elseif p.t == 2 then
         params:add_option("ui_"..pid,p.name,p.options,p.default)
-        params:set_action("ui_"..pid,
-          function(value)
-            local eid = "ch"..params:get("ui_channelSelect")..pid
-            for x=1,16 do
-              for y=1,8 do
-                if alt[x][y] then
-                  step_params[y][x][eid] = value
-                  active_plocks[eid] = true
-                  print("step_params"..step_params[y][x][eid])
-                end
-              end
-            end
-            if not global_alt then
-              channel_params[eid]= value
-              print("channel_params:"..channel_params[eid])
-              params:set(eid,value)
-            end
-          end
-          )
+        params:set_action("ui_"..pid,function(value) store_param_values(pid,value) end)
       elseif p.t == 3 then
         params:add_control("ui_"..pid,p.name,p.controlspec)
-        params:set_action("ui_"..pid,
-          function(value)
-            local eid = "ch"..params:get("ui_channelSelect")..pid
-            for x=1,16 do
-              for y=1,8 do
-                if alt[x][y] then
-                  step_params[y][x][eid] = value
-                  active_plocks[eid] = true
-                  print("step_params"..step_params[y][x][eid])
-                end
-              end
-            end
-            if not global_alt then
-              channel_params[eid]= value
-              print("channel_params:"..channel_params[eid])
-              params:set(eid,value)
-            end
-          end
-          )
+        params:set_action("ui_"..pid,function(value) store_param_values(pid,value) end)
       end
-      
     end
+    
     -- create channel value store
     if string.sub(p.id,1,2) == "ch" then
       if p.t == 2 or p.t == 3 or p.t == 5 then
         channel_params[p.id] = params:get(p.id)
       end
     end
+  end
+end
 
+function init_param_actions()
   params:set_action("ui_channelSelect",
     function(value)
       for k,v in pairs(channel_params) do
@@ -210,20 +176,12 @@ function init_ui_params()
         end
       end
     end
-    )
-
-  end
-end
-
-function init_step_params()
-  step_params = {}
-  active_plocks = {}
-  for ch=1,8 do
-    step_params[ch] = {}
-    for step=1,16 do
-      step_params[ch][step] = {}
+  )
+  params:set_action("ui_toneWaveType",
+    function(value)
+      Northbound.update_wave_options("ui_toneWave",value)
     end
-  end
+  )
 end
 
 function init()
@@ -231,7 +189,7 @@ function init()
   Northbound.add_params()
   add_parameters()
   init_ui_params()
-  init_step_params()
+  init_param_actions()
   init_grid_variables()
   --mftconf.load_conf(midi_ctrl_device,PATH.."mft_dd.mfs")
   --mftconf.refresh_values(midi_ctrl_device)
@@ -267,27 +225,15 @@ function step()
   step = 1
   while true do
     clock.sync(1/4)
+    --send params to engine
+    --set_params(step)
     for i=1,8 do
       if params:get("step"..i..step) == 1 then
+        --set params to engine for step
+        --set_params_for_step(i,step)
+        
+        --if probability then trigger step
         if math.random(100) <= params:get("prob"..i..step) then
-
-          --set parameters for step
-          if next(step_params[i][step]) == nil then
-            for k,v in pairs(active_plocks) do
-              if tonumber(string.sub(k,3,3)) == i then
-                print("here")
-                params:set(k,channel_params[k])
-              end
-            end
-          else
-            for k,v in pairs(step_params[i][step]) do
-              --print(string.sub(k,3,3))
-              if tonumber(string.sub(k,3,3)) == i then
-                print("should be happening")
-                params:set(k,v)
-              end
-            end
-          end
           engine.trig(i,params:get("vel"..i..step)/127)
         end
       end
@@ -320,21 +266,20 @@ end
 function key(n,z)
   if z == 1 then
     if n == 2 then
-      engine.trig(1,1)
+      remove_plock()
+    elseif n == 3 then
+      remove_all_plocks()
     end
   end
 end
 
 function enc(n,d)
-  for x=1,16 do
-    for y=1,8 do
-      if alt[x][y] then
-        if n == 1 then  
-          params:delta("prob"..y..x,d)
-        elseif n == 2 then
-          params:delta("vel"..y..x,d)
-        end
-      end
+  if step_selected() then
+    ch, step = selected_step()
+    if n == 1 then  
+      params:delta("prob"..ch..step,d)
+    elseif n == 2 then
+      params:delta("vel"..ch..step,d)
     end
   end
   grid_dirty = true
@@ -359,20 +304,25 @@ function short_press(x,y)
   else
     params:set("step"..y..x,0)
   end
+  params:set("ui_channelSelect",y)
   grid_dirty = true
 end
 
 function long_press(x,y)
   clock.sleep(0.25)
-  alt[x][y] = true
-  global_alt = true
+  alt_x = x
+  alt_y = y
   counter[x][y] = nil
+  params:set("ui_channelSelect",y)
+  step_params_to_ui(x,y)
   grid_dirty = true
 end
 
 function long_release(x,y)
-  alt[x][y] = false
-  global_alt = false
+  alt_x = nil
+  alt_y = nil
+  params:set("ui_channelSelect",y)
+  channel_params_to_ui(y)
   grid_dirty = true
 end
 
@@ -380,27 +330,78 @@ end
 --
 -- HELPER FUNCTIONS
 --
-function deepcopy(orig)
-    local orig_type = type(orig)
-    local copy
-    if orig_type == 'table' then
-        copy = {}
-        for orig_key, orig_value in next, orig, nil do
-            copy[deepcopy(orig_key)] = deepcopy(orig_value)
-        end
-        setmetatable(copy, deepcopy(getmetatable(orig)))
-    else -- number, string, boolean, etc
-        copy = orig
+function step_params_to_ui(step,ch)
+  for param, t in pairs(plock) do
+    --tab.print(plock)
+    if plock[param][step] ~= nil then
+      if string.sub(param,3,3) == ch then
+        params:set("ui_"..string.sub(param,4),plock[param][step])
+      end
     end
-    return copy
+  end
 end
 
-function shallow_copy(t)
-  local t2 = {}
-  for k,v in pairs(t) do
-    t2[k] = v
+--OK
+function channel_params_to_ui(ch)
+  for k,v in pairs(channel_params) do
+    if tonumber(string.sub(k,3,3)) == ch then
+      params:set("ui_"..string.sub(k,4),v)
+    end
   end
-  return t2
+end
+
+--OK
+function set_params(step)
+  for param, t in pairs(plock) do
+    --if plock for step exists send step params to engine
+    if plock[param][step] ~= nil then
+      params:set(param,plock[param][step])
+    --if plock exists for param but not for step then send channel params to engine
+    else
+      params:set(param,channel_params[param])
+    end
+  end
+end
+
+function store_param_values(pid,value)
+  local eid = "ch"..params:get("ui_channelSelect")..pid
+    if step_selected() then
+      ch, step = selected_step()
+      plock[eid] = {}
+      plock[eid][step] = value
+    else
+      channel_params[eid] = value
+      if plock[eid] == nil then
+        params:set(eid,value)
+      end
+    end
+end
+
+function remove_plock()
+  if step_selected() then
+    -- this would need a number for finding last value
+  end
+end
+
+function remove_all_plocks()
+  if step_selected() then
+    ch, step = selected_step()
+    for param, t in pairs(plock) do
+      plock[param][step] = nil
+    end
+  end
+end
+
+function step_selected()
+  if alt_x ~= nil and alt_y ~= nil then
+    return true
+  else 
+    return false
+  end
+end
+
+function selected_step()
+  return alt_y, alt_x
 end
 
 
