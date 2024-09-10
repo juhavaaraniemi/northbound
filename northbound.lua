@@ -56,62 +56,9 @@ function add_parameters()
       midi_ctrl_device = midi.connect(value)
     end
   }
-  
-  for i = 1,8 do
-    params:add_group("SEQ CHANNEL "..i,48)
-    for j = 1,16 do
-      params:add{
-        type = "number",
-        id = "step"..i..j,
-        name = "step "..j.." on",
-        min = 0,
-        max = 1,
-        default = 0,
-        action = function(value)
-          if value == 1 then
-            if params:get("prob"..i..j) == 0 then
-              params:set("prob"..i..j,100)
-            elseif params:get("vel"..i..j) == 0 then
-              params:set("vel"..i..j,100)
-            end
-          end
-        end
-      }
-      params:add{
-        type = "number",
-        id = "prob"..i..j,
-        name = "step "..j.." probability",
-        min = 0,
-        max = 100,
-        default = 100,
-        action = function(value)
-          if value == 0 then
-            params:set("step"..i..j,0)
-          end
-          if params:get("step"..i..j) == 1 then
-            --brightness[j][i] = math.ceil(value/100*15)
-          end
-        end
-      }
-      params:add{
-        type = "number",
-        id = "vel"..i..j,
-        name = "step "..j.." velocity",
-        min = 0,
-        max = 127,
-        default = 100,
-        action = function(value)
-          if value == 0 then
-            params:set("step"..i..j,0)
-          end
-        end
-      }
-    end
-  end
 end
 
 function init_grid_variables()
-  global_alt = false
   counter = {}
   alt_x = nil
   alt_y = nil
@@ -166,12 +113,66 @@ function init_ui_params()
   end
 end
 
+function init_triggers()
+  trig = {}
+  local step
+  local ch
+  for step = 1,16 do
+    trig[step] = {}
+    for ch = 1,8 do
+      trig[step][ch] = {}
+      trig[step][ch]["on"] = 0
+      trig[step][ch]["prob"] = 100
+      trig[step][ch]["vel"] = 100
+    end
+  end
+end
+
+function init_ui_trigger_params()
+  params:add_group("NORTHBOUND TRIGS",5)
+  params:add_number("trig_step","Trig Step",1,16,1)
+  params:add_number("trig_channel","Trig Channel",1,8,1)
+  params:add_number("trig_on","Trig On",0,1,0)
+  params:add_number("trig_prob","Trig Probability",0,100,100)
+  params:add_number("trig_vel","Trig Velocity",0,127,100)
+  
+  params:set_action("trig_step",
+    function(value)
+      params:set("trig_on",trig[value][params:get("trig_channel")]["on"])
+      params:set("trig_prob",trig[value][params:get("trig_channel")]["prob"])
+      params:set("trig_vel",trig[value][params:get("trig_channel")]["vel"])
+    end
+  )
+  params:set_action("trig_channel",
+    function(value)
+      params:set("trig_on",trig[params:get("trig_channel")][value]["on"])
+      params:set("trig_prob",trig[params:get("trig_channel")][value]["prob"])
+      params:set("trig_vel",trig[params:get("trig_channel")][value]["vel"])
+    end
+  )
+  params:set_action("trig_on",
+    function(value)
+      trig[params:get("trig_step")][params:get("trig_channel")]["on"] = value
+    end
+  )
+  params:set_action("trig_prob",
+    function(value)
+      trig[params:get("trig_step")][params:get("trig_channel")]["prob"] = value
+    end
+  )
+  params:set_action("trig_vel",
+    function(value)
+      trig[params:get("trig_step")][params:get("trig_channel")]["vel"] = value
+    end
+  )
+  
+end
+
 function init_param_actions()
   params:set_action("ui_channelSelect",
     function(value)
       for k,v in pairs(channel_params) do
         if tonumber(string.sub(k,3,3)) == value then
-          print("ui_"..string.sub(k,4))
           params:set("ui_"..string.sub(k,4),v)
         end
       end
@@ -181,8 +182,38 @@ function init_param_actions()
     function(value)
       Northbound.update_wave_options("ui_toneWave",value)
       store_param_values("toneWaveType",value)
+      if value == 2 then
+        params:show("ui_fmRatio1")
+        params:show("ui_fmRatio2")
+        params:show("ui_fmRatio3")
+        params:show("ui_fmIndex1")
+        params:show("ui_fmIndex2")
+        params:show("ui_fmIndex3")
+        params:show("ui_fmFeedback")
+        params:hide("ui_toneSpectra")
+        params:hide("ui_toneFreq")
+      else
+        params:hide("ui_fmRatio1")
+        params:hide("ui_fmRatio2")
+        params:hide("ui_fmRatio3")
+        params:hide("ui_fmIndex1")
+        params:hide("ui_fmIndex2")
+        params:hide("ui_fmIndex3")
+        params:hide("ui_fmFeedback")
+        params:show("ui_toneSpectra")
+        params:show("ui_toneFreq")
+      end
+      if value == 3 or value == 4 then
+        params:hide("ui_toneBend")
+        params:hide("ui_toneBendTime")
+      else
+        params:show("ui_toneBend")
+        params:show("ui_toneBendTime")
+      end
+      _menu.rebuild_params()
     end
   )
+  params:bang()
 end
 
 function init()
@@ -190,14 +221,47 @@ function init()
   Northbound.add_params()
   add_parameters()
   init_ui_params()
+  init_triggers()
+  init_ui_trigger_params()
   init_param_actions()
   init_grid_variables()
+  init_pset_callbacks()
   --mftconf.load_conf(midi_ctrl_device,PATH.."mft_dd.mfs")
   --mftconf.refresh_values(midi_ctrl_device)
   clock.run(step)
   grid_redraw_metro = metro.init(grid_redraw_event,1/30,-1)
   grid_redraw_metro:start()
   redraw_metro = metro.init(redraw_event, 1/30, -1)
+end
+
+
+--
+-- CALLBACK FUNCTIONS
+--
+function init_pset_callbacks()
+  params.action_write = function(filename,name)
+    print("finished writing '"..filename.."' as '"..name.."'")
+    local channel_params_file = PATH..name.."_ch_params.data"
+    local plock_file = PATH..name.."_plock.data"
+    tab.save(channel_params, channel_params_file)
+    tab.save(plock, plock_file)
+  end
+  
+  params.action_read = function(filename)
+    print("finished reading '"..filename.."'")
+    local pset_file = io.open(filename, "r")
+    if pset_file then
+      io.input(pset_file)
+      local pset_name = string.sub(io.read(), 4, -1)
+      io.close(pset_file)
+      local channel_params_file = PATH..pset_name.."_ch_params.data"
+      local plock_file = PATH..pset_name.."_plock.data"
+      channel_params = tab.load(channel_params_file)
+      plock = tab.load(plock_file)
+      params:set("ui_channelSelect",1)
+      grid_dirty = true
+    end
+  end
 end
 
 
@@ -223,17 +287,18 @@ end
 -- STEP SEQUENCER
 --
 function step()
-  step = 1
+  local step = 1
   while true do
     clock.sync(1/4)
+    local ch
     for ch=1,8 do
-      if params:get("step"..ch..step) == 1 then
+      if trig[step][ch]["on"] == 1 then
         --send params to engine
         set_params(ch,step)
         
         --if probability then trigger step
-        if math.random(100) <= params:get("prob"..ch..step) then
-          engine.trig(ch,params:get("vel"..ch..step)/127)
+        if math.random(100) <= trig[step][ch]["prob"] then
+          engine.trig(ch,trig[step][ch]["vel"]/127)
         end
       end
     end
@@ -274,11 +339,13 @@ end
 
 function enc(n,d)
   if step_selected() then
+    local ch
+    local step
     ch, step = selected_step()
     if n == 1 then  
-      params:delta("prob"..ch..step,d)
+      --params:delta("prob"..ch..step,d)
     elseif n == 2 then
-      params:delta("vel"..ch..step,d)
+      --params:delta("vel"..ch..step,d)
     end
   end
   grid_dirty = true
@@ -298,11 +365,7 @@ function g.key(x,y,z)
 end
 
 function short_press(x,y)
-  if params:get("step"..y..x) == 0 then
-    params:set("step"..y..x,1)
-  else
-    params:set("step"..y..x,0)
-  end
+  flip_trig_state(x,y)
   params:set("ui_channelSelect",y)
   grid_dirty = true
 end
@@ -331,16 +394,14 @@ end
 --
 function step_params_to_ui(step,ch)
   for param, t in pairs(plock) do
-    --tab.print(plock)
     if plock[param][step] ~= nil then
-      if string.sub(param,3,3) == ch then
+      if tonumber(string.sub(param,3,3)) == ch then
         params:set("ui_"..string.sub(param,4),plock[param][step])
       end
     end
   end
 end
 
---OK
 function channel_params_to_ui(ch)
   for k,v in pairs(channel_params) do
     if tonumber(string.sub(k,3,3)) == ch then
@@ -349,18 +410,17 @@ function channel_params_to_ui(ch)
   end
 end
 
---OK
 function set_params(ch,step)
   for param, t in pairs(plock) do
     --if params exist for current ch
-    if string.sub(param,3,3) == ch then
+    if tonumber(string.sub(param,3,3)) == ch then
       --if plock for step exists send step params to engine
       if plock[param][step] ~= nil then
         params:set(param,plock[param][step])
+      --if plock exists for param but not for step then send channel params to engine
+      else
+        params:set(param,channel_params[param])
       end
-    --if plock exists for param but not for step then send channel params to engine
-    else
-      params:set(param,channel_params[param])
     end
   end
 end
@@ -368,15 +428,32 @@ end
 function store_param_values(pid,value)
   local eid = "ch"..params:get("ui_channelSelect")..pid
   if step_selected() then
-    ch, step = selected_step()
-    plock[eid] = {}
-    plock[eid][step] = value
+    local ch
+    local step 
+    ch,step = selected_step()
+    if plock[eid] ~= nil then
+      plock[eid][step] = value
+    else
+      plock[eid] = {}
+      plock[eid][step] = value
+    end  
   else
     channel_params[eid] = value
     if plock[eid] == nil then
       params:set(eid,value)
     end
   end
+end
+
+function flip_trig_state(x,y)
+  if trig[x][y]["on"] == 0 then
+    trig[x][y]["on"] = 1
+  else
+    trig[x][y]["on"] = 0
+  end
+  params:set("trig_step",x)
+  params:set("trig_channel",y)
+  params:set("trig_on",trig[x][y]["on"])
 end
 
 function remove_plock()
@@ -387,11 +464,14 @@ end
 
 function remove_all_plocks()
   if step_selected() then
+    local ch
+    local step
     ch, step = selected_step()
     for param, t in pairs(plock) do
       plock[param][step] = nil
     end
   end
+  cleanup_plock()
 end
 
 function step_selected()
@@ -406,6 +486,14 @@ function selected_step()
   return alt_y, alt_x
 end
 
+function cleanup_plock()
+  for param, t in pairs(plock) do
+    if next(plock[param]) == nil then
+      plock[param] = nil
+    end
+  end
+end
+
 
 --
 -- REDRAW FUNCTIONS
@@ -414,7 +502,7 @@ function grid_redraw()
   g:all(0)
   for x=1,16 do
     for y=1,8 do
-      if params:get("step"..y..x) > 0 then
+      if trig[x][y]["on"] == 1 then
         g:led(x,y,brightness[x][y])
       end
     end
