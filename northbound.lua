@@ -16,13 +16,16 @@ g = grid.connect()
 grid_dirty = true
 screen_dirty = true
 PATH = _path.data.."northbound/"
+STEPS = 16
+CHANNELS = 8
+PATTERNS = 4
 
 
 --
 -- INIT FUNCTIONS
 --
 function add_parameters()
-  params:add_separator("NORTHBOUND")
+  params:add_separator("NORTHBOUND SEQUENCER")
   params:add_group("ROUTING",3)
   params:add{
     type = "number",
@@ -63,10 +66,10 @@ function init_grid_variables()
   alt_x = nil
   alt_y = nil
   brightness = {}
-  for x = 1,16 do
+  for x = 1,STEPS do
     counter[x] = {}
     brightness[x] = {}
-    for y = 1,8 do
+    for y = 1,CHANNELS do
       counter[x][y] = nil
       brightness[x][y] = 15
     end
@@ -83,7 +86,7 @@ end
 function init_ui_params()
   channel_params = {}
   plock = {}
-  params:add_group("NORTHBOUND UI PARAMS",43)
+  params:add_group("SOUNDS",43)
   params:add_number("ui_channelSelect","Channel Select",1,8,1)
   
   --create ui params
@@ -115,57 +118,100 @@ end
 
 function init_triggers()
   trig = {}
+  local pattern
   local step
   local ch
-  for step = 1,16 do
-    trig[step] = {}
-    for ch = 1,8 do
-      trig[step][ch] = {}
-      trig[step][ch]["on"] = 0
-      trig[step][ch]["prob"] = 100
-      trig[step][ch]["vel"] = 100
+  for pattern = 1,PATTERNS do
+    trig[pattern] = {}
+    for step = 1,STEPS do
+      trig[pattern][step] = {}
+      for ch = 1,CHANNELS do
+        trig[pattern][step][ch] = {}
+        trig[pattern][step][ch]["on"] = 0
+        trig[pattern][step][ch]["prob"] = 100
+        trig[pattern][step][ch]["vel"] = 100
+        trig[pattern][step][ch]["bars"] = 1
+      end
     end
   end
 end
 
 function init_ui_trigger_params()
-  params:add_group("NORTHBOUND TRIGS",5)
-  params:add_number("trig_step","Trig Step",1,16,1)
-  params:add_number("trig_channel","Trig Channel",1,8,1)
+  params:add_group("TRIGS",7)
+  params:add_number("trig_pattern","Trig Pattern",1,PATTERNS,1)
+  params:add_number("trig_step","Trig Step",1,STEPS,1)
+  params:add_number("trig_channel","Trig Channel",1,CHANNELS,1)
   params:add_number("trig_on","Trig On",0,1,0)
-  params:add_number("trig_prob","Trig Probability",0,100,100)
   params:add_number("trig_vel","Trig Velocity",0,127,100)
+  params:add_number("trig_prob","Trig Probability",0,100,100)
+  params:add_number("trig_bars","Trig Every X Bars",1,16,1)
   
+  params:set_action("trig_pattern",
+    function(value)
+      params:set("trig_on",trig[params:get("trig_pattern")][value][params:get("trig_channel")]["on"])
+      params:set("trig_prob",trig[params:get("trig_pattern")][value][params:get("trig_channel")]["prob"])
+      params:set("trig_vel",trig[params:get("trig_pattern")][value][params:get("trig_channel")]["vel"])
+      params:set("trig_bars",trig[params:get("trig_pattern")][value][params:get("trig_channel")]["bars"])
+    end
+  )
   params:set_action("trig_step",
     function(value)
-      params:set("trig_on",trig[value][params:get("trig_channel")]["on"])
-      params:set("trig_prob",trig[value][params:get("trig_channel")]["prob"])
-      params:set("trig_vel",trig[value][params:get("trig_channel")]["vel"])
+      params:set("trig_on",trig[params:get("trig_pattern")][value][params:get("trig_channel")]["on"])
+      params:set("trig_prob",trig[params:get("trig_pattern")][value][params:get("trig_channel")]["prob"])
+      params:set("trig_vel",trig[params:get("trig_pattern")][value][params:get("trig_channel")]["vel"])
+      params:set("trig_bars",trig[params:get("trig_pattern")][value][params:get("trig_channel")]["bars"])
     end
   )
   params:set_action("trig_channel",
     function(value)
-      params:set("trig_on",trig[params:get("trig_channel")][value]["on"])
-      params:set("trig_prob",trig[params:get("trig_channel")][value]["prob"])
-      params:set("trig_vel",trig[params:get("trig_channel")][value]["vel"])
+      params:set("trig_on",trig[params:get("trig_pattern")][params:get("trig_channel")][value]["on"])
+      params:set("trig_prob",trig[params:get("trig_pattern")][params:get("trig_channel")][value]["prob"])
+      params:set("trig_vel",trig[params:get("trig_pattern")][params:get("trig_channel")][value]["vel"])
+      params:set("trig_bars",trig[params:get("trig_pattern")][params:get("trig_channel")][value]["bars"])
     end
   )
   params:set_action("trig_on",
     function(value)
-      trig[params:get("trig_step")][params:get("trig_channel")]["on"] = value
+      trig[params:get("trig_pattern")][params:get("trig_step")][params:get("trig_channel")]["on"] = value
     end
   )
   params:set_action("trig_prob",
     function(value)
-      trig[params:get("trig_step")][params:get("trig_channel")]["prob"] = value
+      trig[params:get("trig_pattern")][params:get("trig_step")][params:get("trig_channel")]["prob"] = value
     end
   )
   params:set_action("trig_vel",
     function(value)
-      trig[params:get("trig_step")][params:get("trig_channel")]["vel"] = value
+      trig[params:get("trig_pattern")][params:get("trig_step")][params:get("trig_channel")]["vel"] = value
     end
   )
+  params:set_action("trig_bars",
+    function(value)
+      trig[params:get("trig_pattern")][params:get("trig_step")][params:get("trig_channel")]["bars"] = value
+    end
+  )
+end
+
+function init_pattern_params()
+  pattern = {}
+  for i=1,PATTERNS do
+    pattern[i] = STEPS
+  end
   
+  params:add_group("PATTERNS",2)
+  params:add_number("pattern_select","Pattern",1,PATTERNS,1)
+  params:add_number("pattern_length","Pattern Length",1,STEPS,1)
+  
+  params:set_action("pattern_select",
+    function(value)
+      params:set("pattern_length",pattern[value])
+    end
+  )
+  params:set_action("pattern_length",
+    function(value)
+      pattern[params:get("pattern_select")] = value
+    end
+  )
 end
 
 function init_param_actions()
@@ -223,6 +269,7 @@ function init()
   init_ui_params()
   init_triggers()
   init_ui_trigger_params()
+  init_pattern_params()
   init_param_actions()
   init_grid_variables()
   init_pset_callbacks()
@@ -232,6 +279,7 @@ function init()
   grid_redraw_metro = metro.init(grid_redraw_event,1/30,-1)
   grid_redraw_metro:start()
   redraw_metro = metro.init(redraw_event, 1/30, -1)
+  redraw_metro:start()
 end
 
 
@@ -288,23 +336,26 @@ end
 --
 function step()
   local step = 1
+  local bars = 1
   while true do
     clock.sync(1/4)
     local ch
-    for ch=1,8 do
-      if trig[step][ch]["on"] == 1 then
+    for ch=1,CHANNELS do
+      if trig[params:get("pattern_select")][step][ch]["on"] == 1 then
         --send params to engine
         set_params(ch,step)
-        
-        --if probability then trigger step
-        if math.random(100) <= trig[step][ch]["prob"] then
-          engine.trig(ch,trig[step][ch]["vel"]/127)
+
+        --if probability and bars match then trigger step
+        if math.random(100) <= trig[params:get("pattern_select")][step][ch]["prob"] and
+        bars % trig[params:get("pattern_select")][step][ch]["bars"] == 0 then
+          engine.trig(ch,trig[params:get("pattern_select")][step][ch]["vel"]/127)
         end
       end
     end
     step = step + 1
-    if step > 16 then
+    if step > params:get("pattern_length") then
       step = 1
+      bars = bars + 1
     end
   end
 end
@@ -338,6 +389,9 @@ function key(n,z)
 end
 
 function enc(n,d)
+  if n == 1 then
+    params:delta("pattern_select",d)
+  end
   if step_selected() then
     local ch
     local step
@@ -349,6 +403,7 @@ function enc(n,d)
     end
   end
   grid_dirty = true
+  screen_dirty = true
 end
 
 function g.key(x,y,z)
@@ -411,32 +466,46 @@ function channel_params_to_ui(ch)
 end
 
 function set_params(ch,step)
+  local pattern = params:get("pattern_select")
   for param, t in pairs(plock) do
     --if params exist for current ch
     if tonumber(string.sub(param,3,3)) == ch then
-      --if plock for step exists send step params to engine
-      if plock[param][step] ~= nil then
-        params:set(param,plock[param][step])
-      --if plock exists for param but not for step then send channel params to engine
-      else
-        params:set(param,channel_params[param])
+      --if plock for pattern exists
+      if plock[param][pattern] ~= nil then 
+        --if plock for step exists send step params to engine
+        if plock[param][pattern][step] ~= nil then
+          params:set(param,plock[param][pattern][step])
+          print(params:get(param))
+        else
+          --if plock exists for param but not for step then send channel params to engine
+          params:set(param,channel_params[param])
+          print(params:get(param))
+        end
       end
     end
   end
 end
 
 function store_param_values(pid,value)
+  local pattern = params:get("pattern_select")
   local eid = "ch"..params:get("ui_channelSelect")..pid
   if step_selected() then
     local ch
     local step 
     ch,step = selected_step()
     if plock[eid] ~= nil then
-      plock[eid][step] = value
+      if plock[eid][pattern] ~= nil then
+        plock[eid][pattern][step] = value
+      else
+        plock[eid][pattern] = {}
+        plock[eid][pattern][step] = value
+      end
     else
       plock[eid] = {}
-      plock[eid][step] = value
-    end  
+      plock[eid][pattern] = {}
+      plock[eid][pattern][step] = value
+    end
+    print(plock[eid][pattern][step])
   else
     channel_params[eid] = value
     if plock[eid] == nil then
@@ -446,14 +515,15 @@ function store_param_values(pid,value)
 end
 
 function flip_trig_state(x,y)
-  if trig[x][y]["on"] == 0 then
-    trig[x][y]["on"] = 1
+  if trig[params:get("pattern_select")][x][y]["on"] == 0 then
+    trig[params:get("pattern_select")][x][y]["on"] = 1
   else
-    trig[x][y]["on"] = 0
+    trig[params:get("pattern_select")][x][y]["on"] = 0
   end
+  params:set("trig_pattern",params:get("pattern_select"))
   params:set("trig_step",x)
   params:set("trig_channel",y)
-  params:set("trig_on",trig[x][y]["on"])
+  params:set("trig_on",trig[params:get("pattern_select")][x][y]["on"])
 end
 
 function remove_plock()
@@ -502,7 +572,7 @@ function grid_redraw()
   g:all(0)
   for x=1,16 do
     for y=1,8 do
-      if trig[x][y]["on"] == 1 then
+      if trig[params:get("pattern_select")][x][y]["on"] == 1 then
         g:led(x,y,brightness[x][y])
       end
     end
@@ -513,7 +583,8 @@ end
 function redraw()
   screen.clear()
   screen.level(15)
-  --screen.move(0,11)
+  screen.move(0,11)
+  screen.text("pattern: "..params:get("pattern_select"))
   --screen.text("audio: "..params:string("audio"))
   --screen.move(0,18)
   --screen.text("midi: "..params:string("midi"))
