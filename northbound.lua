@@ -389,17 +389,22 @@ function key(n,z)
 end
 
 function enc(n,d)
-  if n == 1 then
-    params:delta("pattern_select",d)
-  end
   if step_selected() then
     local ch
     local step
     ch, step = selected_step()
     if n == 1 then  
-      --params:delta("prob"..ch..step,d)
+      params:delta("trig_vel",d)
     elseif n == 2 then
-      --params:delta("vel"..ch..step,d)
+      params:delta("trig_prob",d)
+    elseif n == 3 then
+      params:delta("trig_bars",d)
+    end
+  else
+    if n == 2 then
+      params:delta("pattern_select",d)
+    elseif n == 3 then
+      params:delta("ui_channelSelect",d)
     end
   end
   grid_dirty = true
@@ -423,6 +428,7 @@ function short_press(x,y)
   flip_trig_state(x,y)
   params:set("ui_channelSelect",y)
   grid_dirty = true
+  screen_dirty = true
 end
 
 function long_press(x,y)
@@ -432,7 +438,11 @@ function long_press(x,y)
   counter[x][y] = nil
   params:set("ui_channelSelect",y)
   step_params_to_ui(x,y)
+  params:set("trig_pattern",params:get("pattern_select"))
+  params:set("trig_channel",y)
+  params:set("trig_step",x)
   grid_dirty = true
+  screen_dirty = true
 end
 
 function long_release(x,y)
@@ -441,6 +451,7 @@ function long_release(x,y)
   params:set("ui_channelSelect",y)
   channel_params_to_ui(y)
   grid_dirty = true
+  screen_dirty = true
 end
 
 
@@ -585,18 +596,19 @@ function redraw()
   screen.level(15)
   screen.move(0,11)
   screen.text("pattern: "..params:get("pattern_select"))
-  --screen.text("audio: "..params:string("audio"))
-  --screen.move(0,18)
-  --screen.text("midi: "..params:string("midi"))
-  screen.move(0,28)
-  --screen.text("last: "..last_param_name)
-  screen.move(0,35)
-  --screen.text("value: "..last_param_value)
-  screen.move(0,46)
-  --screen.text("transpose y: "..params:get("ytranspose"))
-  --screen.move(0,53)
-  --screen.text("root note: "..musicutil.note_num_to_name(params:get("root_note"), false))
-  --screen.move(0,60)
-  --screen.text("scale: "..scale_names[params:get("scale")])
+  screen.move(0,18)
+  screen.text("channel: "..params:get("ui_channelSelect"))
+  screen.move(0,29)
+  screen.text("last: ")
+  screen.move(0,36)
+  screen.text("value: ")
+  if step_selected() then
+    screen.move(0,47)
+    screen.text("trig velocity: "..params:get("trig_vel"))
+    screen.move(0,54)
+    screen.text("trig probability: "..params:get("trig_prob"))
+    screen.move(0,61)
+    screen.text("trig every x bars: "..params:get("trig_bars"))
+  end
   screen.update()
 end
