@@ -148,10 +148,10 @@ function init_ui_trigger_params()
   
   params:set_action("trig_pattern",
     function(value)
-      params:set("trig_on",trig[params:get("trig_pattern")][value][params:get("trig_channel")]["on"])
-      params:set("trig_prob",trig[params:get("trig_pattern")][value][params:get("trig_channel")]["prob"])
-      params:set("trig_vel",trig[params:get("trig_pattern")][value][params:get("trig_channel")]["vel"])
-      params:set("trig_bars",trig[params:get("trig_pattern")][value][params:get("trig_channel")]["bars"])
+      params:set("trig_on",trig[value][params:get("trig_step")][params:get("trig_channel")]["on"])
+      params:set("trig_prob",trig[value][params:get("trig_step")][params:get("trig_channel")]["prob"])
+      params:set("trig_vel",trig[value][params:get("trig_step")][params:get("trig_channel")]["vel"])
+      params:set("trig_bars",trig[value][params:get("trig_step")][params:get("trig_channel")]["bars"])
     end
   )
   params:set_action("trig_step",
@@ -164,10 +164,10 @@ function init_ui_trigger_params()
   )
   params:set_action("trig_channel",
     function(value)
-      params:set("trig_on",trig[params:get("trig_pattern")][params:get("trig_channel")][value]["on"])
-      params:set("trig_prob",trig[params:get("trig_pattern")][params:get("trig_channel")][value]["prob"])
-      params:set("trig_vel",trig[params:get("trig_pattern")][params:get("trig_channel")][value]["vel"])
-      params:set("trig_bars",trig[params:get("trig_pattern")][params:get("trig_channel")][value]["bars"])
+      params:set("trig_on",trig[params:get("trig_pattern")][params:get("trig_step")][value]["on"])
+      params:set("trig_prob",trig[params:get("trig_pattern")][params:get("trig_step")][value]["prob"])
+      params:set("trig_vel",trig[params:get("trig_pattern")][params:get("trig_step")][value]["vel"])
+      params:set("trig_bars",trig[params:get("trig_pattern")][params:get("trig_step")][value]["bars"])
     end
   )
   params:set_action("trig_on",
@@ -390,9 +390,6 @@ end
 
 function enc(n,d)
   if step_selected() then
-    local ch
-    local step
-    ch, step = selected_step()
     if n == 1 then  
       params:delta("trig_vel",d)
     elseif n == 2 then
@@ -438,9 +435,6 @@ function long_press(x,y)
   counter[x][y] = nil
   params:set("ui_channelSelect",y)
   step_params_to_ui(x,y)
-  params:set("trig_pattern",params:get("pattern_select"))
-  params:set("trig_channel",y)
-  params:set("trig_step",x)
   grid_dirty = true
   screen_dirty = true
 end
@@ -466,6 +460,10 @@ function step_params_to_ui(step,ch)
       end
     end
   end
+  local pattern = params:get("pattern_select")
+  params:set("trig_pattern",pattern)
+  params:set("trig_channel",ch)
+  params:set("trig_step",step)
 end
 
 function channel_params_to_ui(ch)
