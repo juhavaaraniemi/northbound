@@ -335,25 +335,27 @@ end
 -- STEP SEQUENCER
 --
 function step()
+  local pattern = params:get("pattern_select")
+  local length = params:get("pattern_length")
   local step = 1
+  local ch = 1
   local bars = 1
   while true do
     clock.sync(1/4)
-    local ch
     for ch=1,CHANNELS do
-      if trig[params:get("pattern_select")][step][ch]["on"] == 1 then
-        --send params to engine
-        set_params(ch,step)
+      if trig[pattern][step][ch]["on"] == 1 then
+        --if trigger is on then send params to engine
+        set_params(pattern,ch,step)
 
         --if probability and bars match then trigger step
-        if math.random(100) <= trig[params:get("pattern_select")][step][ch]["prob"] and
-        bars % trig[params:get("pattern_select")][step][ch]["bars"] == 0 then
-          engine.trig(ch,trig[params:get("pattern_select")][step][ch]["vel"]/127)
+        if math.random(100) <= trig[pattern][step][ch]["prob"] and
+        bars % trig[pattern][step][ch]["bars"] == 0 then
+          engine.trig(ch,trig[pattern][step][ch]["vel"]/127)
         end
       end
     end
     step = step + 1
-    if step > params:get("pattern_length") then
+    if step > length then
       step = 1
       bars = bars + 1
     end
@@ -474,8 +476,7 @@ function channel_params_to_ui(ch)
   end
 end
 
-function set_params(ch,step)
-  local pattern = params:get("pattern_select")
+function set_params(pattern, ch,step)
   for param, t in pairs(plock) do
     --if params exist for current ch
     if tonumber(string.sub(param,3,3)) == ch then
