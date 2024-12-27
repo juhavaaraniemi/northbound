@@ -529,10 +529,6 @@ function flip_trig_state(x,y)
   else
     trig[params:get("pattern_select")][x][y]["on"] = 0
   end
-  params:set("trig_pattern",params:get("pattern_select"))
-  params:set("trig_step",x)
-  params:set("trig_channel",y)
-  params:set("trig_on",trig[params:get("pattern_select")][x][y]["on"])
 end
 
 function remove_plock()
