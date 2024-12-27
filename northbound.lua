@@ -76,7 +76,6 @@ function init_grid_variables()
   end  
 end
 
-
 function init_midi_devices()
   midi_in_device = midi.connect(1)
   midi_in_device.event = midi_event
@@ -525,7 +524,7 @@ function store_param_values(pid,value)
   end
 end
 
-function flip_trig_state(pattern,ch,step)
+function flip_trig_state(pattern,step,ch)
   if trig[pattern][step][ch]["on"] == 0 then
     trig[pattern][step][ch]["on"] = 1
   else
