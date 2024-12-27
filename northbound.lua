@@ -424,7 +424,8 @@ function g.key(x,y,z)
 end
 
 function short_press(x,y)
-  flip_trig_state(x,y)
+  local pattern = params:get("pattern_select")
+  flip_trig_state(pattern,x,y)
   params:set("ui_channelSelect",y)
   grid_dirty = true
   screen_dirty = true
@@ -436,7 +437,8 @@ function long_press(x,y)
   alt_y = y
   counter[x][y] = nil
   params:set("ui_channelSelect",y)
-  step_params_to_ui(x,y)
+  local pattern = params:get("pattern_select")
+  step_params_to_ui(pattern,x,y)
   grid_dirty = true
   screen_dirty = true
 end
@@ -454,7 +456,7 @@ end
 --
 -- HELPER FUNCTIONS
 --
-function step_params_to_ui(step,ch)
+function step_params_to_ui(pattern,step,ch)
   for param, t in pairs(plock) do
     if plock[param][step] ~= nil then
       if tonumber(string.sub(param,3,3)) == ch then
@@ -462,7 +464,6 @@ function step_params_to_ui(step,ch)
       end
     end
   end
-  local pattern = params:get("pattern_select")
   params:set("trig_pattern",pattern)
   params:set("trig_channel",ch)
   params:set("trig_step",step)
@@ -476,7 +477,7 @@ function channel_params_to_ui(ch)
   end
 end
 
-function set_params(pattern, ch,step)
+function set_params(pattern,ch,step)
   for param, t in pairs(plock) do
     --if params exist for current ch
     if tonumber(string.sub(param,3,3)) == ch then
@@ -524,11 +525,11 @@ function store_param_values(pid,value)
   end
 end
 
-function flip_trig_state(x,y)
-  if trig[params:get("pattern_select")][x][y]["on"] == 0 then
-    trig[params:get("pattern_select")][x][y]["on"] = 1
+function flip_trig_state(pattern,ch,step)
+  if trig[pattern][step][ch]["on"] == 0 then
+    trig[pattern][step][ch]["on"] = 1
   else
-    trig[params:get("pattern_select")][x][y]["on"] = 0
+    trig[pattern][step][ch]["on"] = 0
   end
 end
 
