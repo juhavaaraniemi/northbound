@@ -345,7 +345,7 @@ function step()
     for ch=1,CHANNELS do
       if trig[pattern][step][ch]["on"] == 1 then
         --if trigger is on then send params to engine
-        set_params(pattern,ch,step)
+        set_params(pattern,step,ch)
 
         --if probability and bars match then trigger step
         if math.random(100) <= trig[pattern][step][ch]["prob"] and
@@ -477,7 +477,7 @@ function channel_params_to_ui(ch)
   end
 end
 
-function set_params(pattern,ch,step)
+function set_params(pattern,step,ch)
   for param, t in pairs(plock) do
     --if params exist for current ch
     if tonumber(string.sub(param,3,3)) == ch then
