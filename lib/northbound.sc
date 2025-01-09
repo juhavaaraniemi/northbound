@@ -561,7 +561,6 @@ Northbound {
 					var clickSignal = In.ar(click);
 
 					// mix
-					//var signal = SelectX.ar(mix/100,[toneSignal,noiseSignal]);
 					var signal = Mix.ar([noiseSignal,toneSignal,clickSignal]);
 					// distortion
 					signal=SineShaper.ar(signal,1.0,1+(10/(1+(2.7182**((50-distAmt)/8))))).softclip;
@@ -572,7 +571,6 @@ Northbound {
 					signal = signal*level.dbamp*0.6;
 					//reverb
 					Out.ar(send,signal*reverbSend.linlin(0,100,0,1));
-					//signal = signal*(1-reverbMix);
 					// pan
 					signal = Pan2.ar(signal,pan);
 
@@ -583,17 +581,13 @@ Northbound {
 				SynthDef("reverb", {
 
 					arg in, out = 0;
-					var dry, preProcess, wet, predelay = 0.015;
 
-					dry = In.ar(in);
-					preProcess = tanh(BHiShelf.ar(in: dry, freq: 1000, rs: 1, db: -6, mul: 1.5, add: 0));
-					preProcess = DelayN.ar(in: preProcess, maxdelaytime: predelay, delaytime: predelay);
-					preProcess = preProcess * 0.55;
-					wet = tanh(FreeVerb.ar(in: preProcess, mix: 1, room: 0.7, damp: 0.35, mul: 1.8));
-					//wet = tanh(FreeVerb2.ar(in: preProcess, in2: preProcess, mix: 1, room: 0.7, damp: 0.35, mul: 1.8));
-					//wet = (wet * 0.935);
+					var signal = In.ar(in);
 
-					Out.ar(out, wet!2);
+					signal = GVerb.ar(signal, roomsize: 80, revtime: 3, damping: 0.4, inputbw: 0.2,
+						spread: 15, drylevel: -3, earlyreflevel: -9, taillevel: -11, mul: 1);
+
+					Out.ar(out,signal);
 
 				}).add;
 			}
