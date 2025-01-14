@@ -175,7 +175,7 @@ Northbound {
 								//nil
 							]
 						});
-						Klank.ar(spec, Decay.ar(Impulse.ar(0), 0.004, 0.01),baseFreq/1.59,0,dynDecay);
+						Klank.ar(spec, Decay.ar(Impulse.ar(0), 0.004, 0.01),baseFreq,0,dynDecay);
 					},
 					3: {arg baseFreq, toneSpectra, dynDecay;
 						var partials = 3;
@@ -187,10 +187,7 @@ Northbound {
 							[ 0.20,0.45,0.05 ] // decays
 						]
 						});
-						//signal = Klank.ar(spec, Decay.ar(Impulse.ar(0), 0.004, 0.1),baseFreq,0,dynDecay);
 						signal = Klank.ar(spec, Decay.ar(WhiteNoise.ar(0.1), 0.014, 0.08),baseFreq,0,dynDecay);
-						signal = signal * Env.perc(0,dynDecay/10,1).kr(doneAction: 2);
-
 						BHiPass.ar(signal, toneSpectra.linexp(0,100,20,2000),1,1)
 					}
 				);
@@ -595,7 +592,6 @@ Northbound {
 
 				//reverb
 				SynthDef("reverb", {
-
 					arg in, out = 0;
 
 					var signal = In.ar(in);
@@ -604,7 +600,6 @@ Northbound {
 						spread: 15, drylevel: -3, earlyreflevel: -9, taillevel: -11, mul: 1);
 
 					Out.ar(out,signal);
-
 				}).add;
 			}
 		}
